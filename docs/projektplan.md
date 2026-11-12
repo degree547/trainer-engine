@@ -56,7 +56,7 @@ Elf Arbeitspakete decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen
 
 | AP | Status | Datum | Bemerkung |
 | --- | --- | --- | --- |
-| AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. Offen: GitHub Pages im Repo aktivieren und auf dem Smartphone prüfen |
+| AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. GitHub Pages aktiv unter https://degree547.github.io/trainer-engine/. Offen: Prüfung auf dem Smartphone (Installation, Flugmodus) |
 
 Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-06, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung.
 
@@ -88,7 +88,7 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 ## Nächste Schritte
 
 - [x] Lastenheft als Markdown exportieren und ins Repo legen
-- [ ] GitHub-Repo anlegen und GitHub Pages aktivieren
+- [x] GitHub-Repo anlegen und GitHub Pages aktivieren
 - [ ] Claude Code auf dem Notebook einrichten und den Tarif prüfen
 - [ ] Aktuellen SKS-Fragenkatalog bei ELWIS herunterladen
 - [ ] Erste Claude-Code-Sitzung: AP1 und AP2
