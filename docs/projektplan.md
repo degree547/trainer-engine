@@ -56,7 +56,7 @@ Elf Arbeitspakete decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen
 
 | AP | Status | Datum | Bemerkung |
 | --- | --- | --- | --- |
-| AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. GitHub Pages aktiv unter https://degree547.github.io/trainer-engine/. Offen: Prüfung auf dem Smartphone (Installation, Flugmodus) |
+| AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. GitHub Pages aktiv unter https://degree547.github.io/trainer-engine/. Auf dem Smartphone (Android, Brave) installiert und im Flugmodus geprüft. Dunkelmodus nur im Browser getestet |
 
 Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-06, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung.
 
