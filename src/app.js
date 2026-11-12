@@ -4,8 +4,8 @@ import { ladeModulAusUrl, ladeModulAusDatei } from './engine/m1-kern.js';
 import { ladeTexte, t } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
 
-// Welches Inhaltsmodul beim Start geladen wird. Der SKS-Katalog folgt in AP2.
-const STANDARDMODUL = 'content/beispiel/beispiel.json';
+// Welches Inhaltsmodul beim Start geladen wird (amtlicher SKS-Katalog, AP2).
+const STANDARDMODUL = 'content/sks/sks.json';
 
 const hauptbereich = document.getElementById('app');
 const statuszeile = document.getElementById('status');

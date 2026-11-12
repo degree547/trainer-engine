@@ -57,6 +57,7 @@ Elf Arbeitspakete decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen
 | AP | Status | Datum | Bemerkung |
 | --- | --- | --- | --- |
 | AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. GitHub Pages aktiv unter https://degree547.github.io/trainer-engine/. Auf dem Smartphone (Android, Brave) installiert und im Flugmodus geprüft. Dunkelmodus nur im Browser getestet |
+| AP2 | erledigt | 13.11.2026 | Inhaltsformat M8 mit vollständiger Prüfung (Fehler mit Zeile und Klartext, Deutsch und Englisch). Import-Skript `tools/import-sks.mjs` für den amtlichen Katalog (ELWIS, Stand 01.07.2006): 638 Fragen, Anzahl je Bereich stimmt mit dem Original überein (Navigation 118, Recht 110, Wetter 101, Seemannschaft I 163, Seemannschaft II 146). Alle Paare aus Frage und Antwort gelesen, 39 Handkorrekturen in `tools/sks/korrekturen.json`. Kernpunkte für alle 638 Antworten erstellt (vorgezogen aus der Inhaltsarbeit, Status „ungeprüft“). 13 Fragen verweisen auf Abbildungen, die noch fehlen; bei 3 davon besteht die amtliche Antwort nur aus einer Skizze. 34 Tests grün. Im Browser geprüft, noch nicht auf dem Smartphone |
 
 Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-06, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung.
 
@@ -90,5 +91,7 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 - [x] Lastenheft als Markdown exportieren und ins Repo legen
 - [x] GitHub-Repo anlegen und GitHub Pages aktivieren
 - [ ] Claude Code auf dem Notebook einrichten und den Tarif prüfen
-- [ ] Aktuellen SKS-Fragenkatalog bei ELWIS herunterladen
-- [ ] Erste Claude-Code-Sitzung: AP1 und AP2
+- [x] Aktuellen SKS-Fragenkatalog bei ELWIS herunterladen (Stand 01.07.2006, vor der Prüfung bei ELWIS auf Aktualität prüfen)
+- [x] Erste Claude-Code-Sitzung: AP1 und AP2
+- [ ] Kernpunkte stichprobenartig prüfen, vor allem Recht und Seemannschaft (Status „ungeprüft“ in `tools/sks/kernpunkte-*.json`)
+- [ ] Fehlende Abbildungen zu 13 Fragen nachtragen (Liste: Fragen mit Hinweis im Modul)

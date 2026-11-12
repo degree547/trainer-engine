@@ -13,10 +13,11 @@ test('de.json und en.json haben dieselben Schlüssel', async () => {
   assert.deepEqual(Object.keys(en).sort(), Object.keys(de).sort());
 });
 
-test('jeder Fehlercode aus M1 hat einen Text', async () => {
+test('jeder Fehlercode aus M1 und M8 hat einen Text', async () => {
   const de = JSON.parse(await lies('src/i18n/de.json'));
-  const kern = await lies('src/engine/m1-kern.js');
-  const codes = new Set(kern.match(/'modul\.\w+'/g).map((c) => c.slice(1, -1)));
+  const quelltext = (await lies('src/engine/m1-kern.js')) + (await lies('src/engine/m8-inhaltsformat.js'));
+  const codes = new Set(quelltext.match(/'(modul|inhalt|json)\.\w+'/g).map((c) => c.slice(1, -1)));
+  assert.ok(codes.size > 20);
   for (const code of codes) assert.ok(code in de, `Text fehlt für ${code}`);
 });
 
@@ -37,7 +38,8 @@ test('alle Dateien im Service-Worker-Cache existieren', async () => {
 
 test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
   const sw = await lies('sw.js');
-  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/ui/i18n.js', 'src/ui/start.js']) {
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m8-inhaltsformat.js',
+    'src/ui/i18n.js', 'src/ui/start.js', 'content/sks/sks.json']) {
     assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
   }
 });

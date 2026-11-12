@@ -13,10 +13,30 @@ function el(tag, attribute = {}, ...kinder) {
   return knoten;
 }
 
+/** Ort eines Formatfehlers in Klartext, z. B. „Zeile 12 · Frage 3 (sks-nav-003)“. */
+function ortstext(f) {
+  const teile = [];
+  if (f.zeile) teile.push(t('fehler.zeile', { zeile: f.zeile }));
+  const ort = f.ort ?? {};
+  if (ort.art === 'meta') teile.push(t('fehler.ortMeta'));
+  if (ort.art === 'thema') teile.push(t(ort.id ? 'fehler.ortThemaId' : 'fehler.ortThema', ort));
+  if (ort.art === 'frage') teile.push(t(ort.id ? 'fehler.ortFrageId' : 'fehler.ortFrage', ort));
+  return teile.join(' · ');
+}
+
+const MAX_FEHLER = 20;
+
 export function fehlertext(fehler) {
   const details = fehler.details ?? {};
-  const zeilen = [t(fehler.code ?? 'modul.nichtErreichbar', { meldung: details.meldung ?? fehler.message })];
-  for (const code of details.fehler ?? []) zeilen.push('• ' + t(code));
+  const kopf = fehler.code === 'modul.keinJson' ? 'modul.keinJsonKopf' : (fehler.code ?? 'modul.nichtErreichbar');
+  const zeilen = [t(kopf, { meldung: details.meldung ?? fehler.message })];
+  const liste = details.fehler ?? [];
+  for (const f of liste.slice(0, MAX_FEHLER)) {
+    if (typeof f === 'string') { zeilen.push('• ' + t(f)); continue; }
+    const ort = ortstext(f);
+    zeilen.push('• ' + (ort ? `${ort}: ` : '') + t(f.code, f.werte));
+  }
+  if (liste.length > MAX_FEHLER) zeilen.push(t('fehler.weitere', { anzahl: liste.length - MAX_FEHLER }));
   return zeilen.join('\n');
 }
 
@@ -37,10 +57,18 @@ export function zeigeStart(ziel, zustand) {
     if (u.stand) liste.append(el('dt', {}, t('start.stand')), el('dd', {}, u.stand));
     if (u.herkunft) liste.append(el('dt', {}, t('start.herkunft')), el('dd', {}, u.herkunft));
 
+    // Fragenzahl je Thema, damit sich der Import mit dem Original abgleichen lässt.
+    const themenliste = el('ul', { class: 'themen' });
+    for (const thema of zustand.modul.themen) {
+      const anzahl = zustand.modul.fragen.filter((f) => f.thema === thema.id).length;
+      themenliste.append(el('li', {}, el('span', {}, thema.titel), el('span', { class: 'zahl' }, String(anzahl))));
+    }
+
     const karte = el('section', { class: 'karte' },
       el('p', { class: 'etikett' }, t('start.modul')),
       el('h2', {}, u.titel),
       liste,
+      themenliste,
     );
     if (zustand.dateiname) karte.append(el('p', { class: 'hinweis' }, t('start.dateiGeladen', { name: zustand.dateiname })));
     inhalt.push(karte);

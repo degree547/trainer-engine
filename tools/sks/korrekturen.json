@@ -1,0 +1,155 @@
+{
+  "sks-nav-013": {
+    "musterantwort": "1. In den Leuchtfeuerverzeichnissen bzw. in der List of Lights sowie auszugsweise in den Seekarten.\n2. In der Karte 1/INT des BSH.\n3. Schwimmende Schifffahrtszeichen zusätzlich in der Anlage I zur SeeSchStrO (z. B. Tonnen des Lateral- bzw. Kardinalsystems).",
+    "grund": "Linktext aus der Webseite („International Hydrographic 1“) entfernt"
+  },
+  "sks-nav-018": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-nav-083": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-nav-088": {
+    "musterantwort": "Der Wind kann Strömungen und Wasserstandsänderungen hervorrufen, die zu den Gezeitenströmen und den Gezeiten hinzutreten.",
+    "grund": "Trennfehler „hinz utreten“ aus dem PDF"
+  },
+  "sks-recht-018": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-021": {
+    "hinweis": "bild",
+    "grund": "Lichterführung nur als Abbildung"
+  },
+  "sks-recht-023": {
+    "frage": "Die Lichteranordnung eines Fahrzeugs ändert sich plötzlich von [Abbildung 1] in [Abbildung 2]. Was schließen Sie daraus?",
+    "hinweis": "bild",
+    "grund": "Lichteranordnungen nur als Abbildungen; Platzhalter eingesetzt"
+  },
+  "sks-recht-031": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-032": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-040": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-041": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-046": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-048": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-049": {
+    "hinweis": "bild",
+    "grund": "Lichter des Fahrzeugs B nur als Abbildung"
+  },
+  "sks-recht-051": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-recht-067": {
+    "frage": "Sie sehen vor dem Einlaufen in den NOK in Brunsbüttel folgende Lichtsignale: 1. ein unterbrochenes rotes Licht, 2. ein unterbrochenes weißes Licht über einem unterbrochenen roten Licht, 3. ein unterbrochenes weißes Licht. Geben Sie die Bedeutung dieser Signale an.",
+    "musterantwort": "1. Einfahren verboten.\n2. Freigabe wird vorbereitet.\n3. Sportfahrzeuge können einfahren.",
+    "grund": "Aufzählung der Signale gehört zur Frage"
+  },
+  "sks-recht-082": {
+    "hinweis": "bild",
+    "grund": "Signalkörper nur als Abbildung"
+  },
+  "sks-sm1-039": {
+    "frage": "Was versteht man unter 1. Formschwerpunkt (F)? 2. Massenschwerpunkt (Gewichtsschwerpunkt, G)? Welche Kräfte wirken in den beiden Punkten?",
+    "musterantwort": "1. Im Formschwerpunkt F kann man sich die Masse des vom Schiff verdrängten Wassers vereinigt denken. In F wirkt die Auftriebskraft senkrecht zur Wasseroberfläche nach oben.\n2. Im Massenschwerpunkt G kann man sich die Masse des Schiffes einschließlich Ausrüstung und Besatzung vereinigt denken. In G wirkt die Gewichtskraft senkrecht zur Wasseroberfläche nach unten.",
+    "grund": "zweiter Fragenteil stand in der Antwort"
+  },
+  "sks-sm1-041": {
+    "musterantwort": "(Zeichnung!) Bei Einfall der Bö fällt der \"scheinbare Wind\" etwas achterlicher ein, er \"raumt\", und das Segelboot kann etwas höher an den \"wahren Wind\" gehen.",
+    "hinweis": "Zu dieser Frage gehört im amtlichen Katalog eine Zeichnung (Vektorparallelogramm vor und bei Einfall der Bö), die hier noch fehlt.",
+    "grund": "Bildunterschriften der Zeichnung aus der Antwort entfernt"
+  },
+  "sks-sm1-063": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-sm1-064": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-sm1-079": {
+    "musterantwort": "Die amtliche Lösung besteht nur aus einer Skizze, die hier noch fehlt.",
+    "hinweis": "bild",
+    "grund": "Antwort ist nur eine Skizze"
+  },
+  "sks-sm1-100": {
+    "musterantwort": "1. Hebel für Bugstrahlruder nach Backbord legen, sodass der Bug von der Pier weggedrückt wird (nach Backbord schwenkt) und gleichzeitig\n2. Ruderlage deutlich nach Steuerbord und langsame Fahrt voraus, sodass das Heck nach Backbord ausschwenkt. So wird das Schiff fast parallel von der Pier abgedrückt.",
+    "grund": "Trennfehler „gleichz eitig“ aus dem PDF"
+  },
+  "sks-sm1-104": {
+    "musterantwort": "Die amtliche Lösung besteht nur aus einer Skizze, die hier noch fehlt.",
+    "hinweis": "bild",
+    "grund": "Antwort ist nur eine Skizze"
+  },
+  "sks-sm1-120": {
+    "musterantwort": "1. Feuerlöscher (ABC-Pulverlöscher und eventuell CO2-Löscher),\n2. Pütz zum Löschen von Bränden fester Stoffe,\n3. Feuerlöschdecke,\n4. Löschdurchlass für geschlossene Motorräume, der das Löschen von Bränden mit CO2-Löschern ohne Sauerstoffzutritt ermöglicht.",
+    "grund": "hochgestellte 2 als „CO22“ gelesen"
+  },
+  "sks-sm1-143": {
+    "frage": "Welcher Ankergrund ist für die üblichen Leichtgewichtsanker 1. gut geeignet? 2. mäßig geeignet? 3. ungeeignet?",
+    "musterantwort": "1. Sand, Schlick, weicher Ton und Lehm,\n2. harter Ton und Lehm,\n3. steinige, verkrautete und stark schlammige Böden.",
+    "grund": "Fragenteile standen in der Antwort"
+  },
+  "sks-sm2-026": {
+    "frage": "Was versteht man unter 1. Formschwerpunkt (F)? 2. Massenschwerpunkt (Gewichtsschwerpunkt, G)? Welche Kräfte wirken in den beiden Punkten?",
+    "musterantwort": "1. Im Formschwerpunkt F kann man sich die Masse des vom Schiff verdrängten Wassers vereinigt denken. In F wirkt die Auftriebskraft senkrecht zur Wasseroberfläche nach oben.\n2. Im Massenschwerpunkt G kann man sich die Masse des Schiffes einschließlich Ausrüstung und Besatzung vereinigt denken. In G wirkt die Gewichtskraft senkrecht zur Wasseroberfläche nach unten.",
+    "grund": "zweiter Fragenteil stand in der Antwort"
+  },
+  "sks-sm2-050": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-sm2-065": {
+    "musterantwort": "Die amtliche Lösung besteht nur aus einer Skizze, die hier noch fehlt.",
+    "hinweis": "bild",
+    "grund": "Antwort ist nur eine Skizze"
+  },
+  "sks-sm2-083": {
+    "musterantwort": "1. Hebel für Bugstrahlruder nach Backbord legen, sodass der Bug von der Pier weggedrückt wird (nach Backbord schwenkt) und gleichzeitig\n2. Ruderlage deutlich nach Steuerbord und langsame Fahrt voraus, sodass das Heck nach Backbord ausschwenkt. So wird das Schiff fast parallel von der Pier abgedrückt.",
+    "grund": "Trennfehler „gleichz eitig“ aus dem PDF"
+  },
+  "sks-sm2-101": {
+    "musterantwort": "1. Feuerlöscher (ABC-Pulverlöscher und eventuell CO2-Löscher),\n2. Pütz zum Löschen von Bränden fester Stoffe,\n3. Feuerlöschdecke,\n4. Löschdurchlass für geschlossene Motorräume, der das Löschen von Bränden mit CO2-Löschern ohne Sauerstoffzutritt ermöglicht.",
+    "grund": "hochgestellte 2 als „CO22“ gelesen"
+  },
+  "sks-sm2-124": {
+    "frage": "Welcher Ankergrund ist für die üblichen Leichtgewichtsanker 1. gut geeignet? 2. mäßig geeignet? 3. ungeeignet?",
+    "musterantwort": "1. Sand, Schlick, weicher Ton und Lehm,\n2. harter Ton und Lehm,\n3. steinige, verkrautete und stark schlammige Böden.",
+    "grund": "Fragenteile standen in der Antwort"
+  },
+  "sks-wetter-028": {
+    "frage": "Welche Verlagerungsgeschwindigkeiten haben Tiefdruckgebiete: 1. schnelle, 2. mittlere, 3. langsame?",
+    "musterantwort": "1. Schnelle: 30 bis 50 kn.\n2. Mittlere: 15 bis 30 kn.\n3. Langsame: bis 15 kn.",
+    "grund": "Aufzählung gehört zur Frage"
+  },
+  "sks-wetter-031": {
+    "hinweis": "",
+    "grund": "„dargestellt“ meint hier keine Abbildung"
+  },
+  "sks-wetter-033": {
+    "hinweis": "bild",
+    "grund": "Punkte 1 bis 5 beziehen sich auf eine Abbildung"
+  },
+  "sks-wetter-035": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  },
+  "sks-wetter-044": {
+    "frage": "Welche Windgeschwindigkeiten in Knoten oder Beaufort erreicht der Seewind etwa 1. im Mittelmeer, 2. in Nord- und Ostsee?",
+    "musterantwort": "1. Bis zu 25 kn oder Bft 6.\n2. Bis 15 kn, in Einzelfällen bis 20 kn oder Bft 4/5, in Einzelfällen Bft 5/6.",
+    "grund": "Aufzählung gehört zur Frage"
+  },
+  "sks-wetter-071": {
+    "musterantwort": "1. Die Windrichtung ändert sich in Luv des Kaps zum Teil stark und verläuft oft parallel zum Kap. Die Windgeschwindigkeit nimmt zu.\n2. Die Windrichtung kann bei besonders hohen Gebirgen auch umlaufend werden. Die Windgeschwindigkeit ist meist schwach, kann dafür örtlich aber sehr böig sein (Fallwinde).",
+    "grund": "Trennfehler „z u“ aus dem PDF"
+  },
+  "sks-wetter-093": {
+    "grund": "Trennung Frage/Antwort von Hand geprüft"
+  }
+}

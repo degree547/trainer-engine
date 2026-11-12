@@ -5,7 +5,9 @@ import {
   pruefeGrundform, leseModul, ladeModulAusUrl, ladeModulAusDatei, modulUebersicht, ModulFehler,
 } from '../src/engine/m1-kern.js';
 
-const gueltig = () => ({ format: 1, meta: { id: 'x', titel: 'X' }, themen: [], fragen: [] });
+const gueltig = () => ({
+  format: 1, meta: { id: 'x', titel: 'X', sprache: 'de', version: '1', stand: '2026-11-12' }, themen: [], fragen: [],
+});
 
 test('gültiges Modul hat keine Fehler', () => {
   assert.deepEqual(pruefeGrundform(gueltig()), []);
@@ -30,7 +32,7 @@ test('leseModul: kaputtes JSON wirft ModulFehler mit Code', () => {
 
 test('leseModul: ungültiges Modul listet die Fehler', () => {
   assert.throws(() => leseModul('{"format":1}'), (e) =>
-    e.code === 'modul.ungueltig' && e.details.fehler.includes('modul.metaFehlt'));
+    e.code === 'modul.ungueltig' && e.details.fehler.some((f) => f.code === 'modul.metaFehlt'));
 });
 
 test('ladeModulAusUrl lädt über die übergebene fetch-Funktion', async () => {

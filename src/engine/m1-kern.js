@@ -1,8 +1,10 @@
 // M1 Kern: lädt ein Inhaltsmodul aus einer JSON-Datei (F-01).
-// Das Modul kennt keine Prüfungsinhalte. Es prüft nur die Grundform;
-// die vollständige Prüfung des Inhaltsformats übernimmt M8 (AP2).
+// Das Modul kennt keine Prüfungsinhalte. Die vollständige Prüfung des
+// Inhaltsformats übernimmt M8; ein Inhaltsmodul gelangt nur über M8 in die Engine.
 
-export const FORMAT_VERSION = 1;
+import { lesePruefe, FORMAT_VERSION } from './m8-inhaltsformat.js';
+
+export { FORMAT_VERSION };
 
 export class ModulFehler extends Error {
   constructor(code, details = {}) {
@@ -40,13 +42,14 @@ export function pruefeGrundform(daten) {
  * @throws {ModulFehler}
  */
 export function leseModul(text, quelle = '') {
-  let daten;
-  try {
-    daten = JSON.parse(text);
-  } catch (e) {
-    throw new ModulFehler('modul.keinJson', { quelle, meldung: e.message });
+  // Die vollständige Prüfung mit Zeilenangaben übernimmt M8 (F-26).
+  const { daten, fehler, jsonFehler } = lesePruefe(text);
+  if (jsonFehler) {
+    throw new ModulFehler('modul.keinJson', {
+      quelle, zeile: jsonFehler.zeile, spalte: jsonFehler.spalte,
+      fehler: [{ code: jsonFehler.code, zeile: jsonFehler.zeile, ort: { art: 'modul' }, werte: jsonFehler.werte }],
+    });
   }
-  const fehler = pruefeGrundform(daten);
   if (fehler.length > 0) {
     throw new ModulFehler('modul.ungueltig', { quelle, fehler });
   }
