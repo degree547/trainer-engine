@@ -52,6 +52,12 @@ Elf Arbeitspakete decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen
 | AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 |
 | AP11 | Buchinhalte einarbeiten, Abnahme | Inhalt | Abnahmekriterien | Version 1 abgenommen | MS4 |
 
+**Status der Arbeitspakete**
+
+| AP | Status | Datum | Bemerkung |
+| --- | --- | --- | --- |
+| AP1 | erledigt | 12.11.2026 | PWA-Grundgerüst, Modul-Lader M1 mit Beispielmodul, Testserver, 16 Tests grün. Offen: GitHub Pages im Repo aktivieren und auf dem Smartphone prüfen |
+
 Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-06, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung.
 
 ## Inhaltsarbeit SKS
@@ -81,7 +87,7 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 
 ## Nächste Schritte
 
-- [ ] Lastenheft als Markdown exportieren und ins Repo legen
+- [x] Lastenheft als Markdown exportieren und ins Repo legen
 - [ ] GitHub-Repo anlegen und GitHub Pages aktivieren
 - [ ] Claude Code auf dem Notebook einrichten und den Tarif prüfen
 - [ ] Aktuellen SKS-Fragenkatalog bei ELWIS herunterladen

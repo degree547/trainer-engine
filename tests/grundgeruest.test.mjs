@@ -1,0 +1,69 @@
+// Prüft das PWA-Grundgerüst: Texte, Service-Worker-Liste, relative Pfade, Testserver.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, access } from 'node:fs/promises';
+import { fuelle, waehleSprache } from '../src/ui/i18n.js';
+import { pfadZuDatei } from '../tools/serve.mjs';
+
+const lies = (pfad) => readFile(new URL(`../${pfad}`, import.meta.url), 'utf8');
+
+test('de.json und en.json haben dieselben Schlüssel', async () => {
+  const de = JSON.parse(await lies('src/i18n/de.json'));
+  const en = JSON.parse(await lies('src/i18n/en.json'));
+  assert.deepEqual(Object.keys(en).sort(), Object.keys(de).sort());
+});
+
+test('jeder Fehlercode aus M1 hat einen Text', async () => {
+  const de = JSON.parse(await lies('src/i18n/de.json'));
+  const kern = await lies('src/engine/m1-kern.js');
+  const codes = new Set(kern.match(/'modul\.\w+'/g).map((c) => c.slice(1, -1)));
+  for (const code of codes) assert.ok(code in de, `Text fehlt für ${code}`);
+});
+
+test('Platzhalter und Sprachwahl', () => {
+  assert.equal(fuelle('Datei: {name}', { name: 'a.json' }), 'Datei: a.json');
+  assert.equal(fuelle('{unbekannt}', {}), '{unbekannt}');
+  assert.equal(waehleSprache('en'), 'en');
+  assert.equal(waehleSprache('fr'), 'de');
+});
+
+test('alle Dateien im Service-Worker-Cache existieren', async () => {
+  const sw = await lies('sw.js');
+  const liste = sw.match(/const DATEIEN = \[([\s\S]*?)\];/)[1];
+  const dateien = [...liste.matchAll(/'([^']+)'/g)].map((m) => m[1]).filter((d) => d !== './');
+  assert.ok(dateien.length > 5);
+  for (const datei of dateien) await access(new URL(`../${datei}`, import.meta.url));
+});
+
+test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
+  const sw = await lies('sw.js');
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/ui/i18n.js', 'src/ui/start.js']) {
+    assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
+  }
+});
+
+test('Pfade in index.html und Manifest sind relativ (GitHub Pages unter /trainer-engine/)', async () => {
+  const html = await lies('index.html');
+  for (const [, pfad] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
+    assert.ok(!pfad.startsWith('/') && !/^https?:/.test(pfad), `nicht relativ: ${pfad}`);
+  }
+  const manifest = JSON.parse(await lies('manifest.webmanifest'));
+  for (const pfad of [manifest.start_url, manifest.scope, ...manifest.icons.map((i) => i.src)]) {
+    assert.ok(!pfad.startsWith('/'), `nicht relativ: ${pfad}`);
+  }
+  assert.ok(manifest.icons.some((i) => i.sizes === '512x512' && i.purpose === 'maskable'));
+});
+
+test('.gitignore enthält die Pflichteinträge', async () => {
+  const zeilen = (await lies('.gitignore')).split(/\r?\n/);
+  for (const e of ['privat/', 'node_modules/', '.DS_Store', 'Thumbs.db']) assert.ok(zeilen.includes(e), e);
+});
+
+test('Testserver liefert nichts aus privat/ und nichts außerhalb des Projekts', () => {
+  assert.ok(pfadZuDatei('/trainer-engine/index.html'));
+  assert.ok(pfadZuDatei('/trainer-engine/').endsWith('index.html'));
+  assert.equal(pfadZuDatei('/trainer-engine/privat/buch.json'), null);
+  assert.equal(pfadZuDatei('/trainer-engine/../geheim.txt'), null);
+  assert.equal(pfadZuDatei('/trainer-engine/%2e%2e/geheim.txt'), null);
+  assert.equal(pfadZuDatei('/anderes/index.html'), null);
+});
