@@ -6,6 +6,7 @@ import {
   oeffneSpeicher, migriere, fuehreZusammen, bitteUmDauerhaftenSpeicher, SpeicherFehler, DB_NAME,
 } from '../src/engine/m7-speicherung.js';
 import { neuerLernstand, bewerte, LERNSTAND_VERSION } from '../src/engine/m2-lernlogik.js';
+import { vergibAntwort, schliesseRundeAb, setzeTagesziel, gesamtXp, streakVon } from '../src/engine/m4-gamification.js';
 import { erzeugeIndexedDB } from './hilfen/fake-indexeddb.mjs';
 
 const HEUTE = '2026-11-22';
@@ -123,4 +124,74 @@ test('dauerhafter Speicher: zugesagt, abgelehnt, nicht angeboten', async () => {
   assert.equal(await bitteUmDauerhaftenSpeicher({}), 'unbekannt');
   assert.equal(await bitteUmDauerhaftenSpeicher(undefined), 'unbekannt');
   assert.equal(await bitteUmDauerhaftenSpeicher({ persist: async () => { throw new Error('x'); } }), 'unbekannt');
+});
+
+// --- Profil aus M4 (XP, Streak, Tagesziel) ---------------------------------
+
+const richtig = (profil) => vergibAntwort(profil, { richtig: true, modus: 'normal' }, HEUTE);
+
+test('Profil: XP, Runden und Tagesziel bleiben nach einem Neustart erhalten', async () => {
+  const indexedDB = erzeugeIndexedDB();
+  const erster = await oeffneSpeicher({ indexedDB });
+  const { profil: leer } = await erster.ladeProfil();
+  assert.equal(gesamtXp(leer), 0);
+  await erster.aendereProfil(richtig);
+  await erster.aendereProfil((p) => schliesseRundeAb(p, { modus: 'normal', beantwortet: 1, gesamt: 1, fehler: 0 }, HEUTE));
+  await erster.aendereProfil((p) => ({ profil: setzeTagesziel(p, 2, HEUTE, 1) }));
+  erster.schliesse();
+
+  const zweiter = await oeffneSpeicher({ indexedDB });
+  const { profil, verworfen } = await zweiter.ladeProfil();
+  assert.equal(verworfen, 0);
+  assert.equal(profil.geraet, leer.geraet, 'die Geräte-ID bleibt gleich');
+  assert.equal(gesamtXp(profil), 30);
+  assert.equal(streakVon(profil, HEUTE).heuteRunden, 1);
+  assert.equal(profil.tagesziel.wert, 2);
+});
+
+test('Profil: XP aus zwei Tabs gehen nicht verloren', async () => {
+  const indexedDB = erzeugeIndexedDB();
+  const tabA = await oeffneSpeicher({ indexedDB });
+  const tabB = await oeffneSpeicher({ indexedDB });
+  await tabA.ladeProfil();
+  await tabB.ladeProfil(); // Tab B hat jetzt einen Stand mit 0 XP im Speicher …
+  await tabA.aendereProfil(richtig);
+  await tabA.aendereProfil(richtig);
+  // … ändert aber den gespeicherten Stand, nicht seinen veralteten.
+  // (Gleichzeitige Transaktionen reiht der Browser selbst nacheinander ein.)
+  const ergebnis = await tabB.aendereProfil(richtig);
+  assert.equal(gesamtXp(ergebnis.profil), 30);
+});
+
+test('Profil: aendereProfil liefert das Ergebnis der Änderung', async () => {
+  const speicher = await oeffneSpeicher({ indexedDB: erzeugeIndexedDB() });
+  const ergebnis = await speicher.aendereProfil(richtig);
+  assert.equal(ergebnis.xp, 10);
+  assert.equal(gesamtXp(ergebnis.profil), 10);
+});
+
+test('Profil aus einer neueren App-Version wird nicht überschrieben', async () => {
+  const indexedDB = erzeugeIndexedDB();
+  const speicher = await oeffneSpeicher({ indexedDB });
+  const neuer = { version: 99, geraet: 'x', geraete: {} };
+  indexedDB.roh(DB_NAME, 'profil').set('profil', neuer);
+  await assert.rejects(speicher.ladeProfil(), (f) => f instanceof SpeicherFehler && f.code === 'speicher.neuereVersion');
+  await assert.rejects(speicher.aendereProfil(richtig), (f) => f.code === 'speicher.neuereVersion');
+  assert.deepEqual(indexedDB.roh(DB_NAME, 'profil').get('profil'), neuer);
+});
+
+test('Umstellung von Datenbankversion 1: der Lernstand bleibt, das Profil kommt dazu', async () => {
+  const indexedDB = erzeugeIndexedDB();
+  // Datenbank wie aus AP5 (Version 1, nur „lernstand“) anlegen.
+  await new Promise((fertig) => {
+    const anfrage = indexedDB.open(DB_NAME, 1);
+    anfrage.onupgradeneeded = () => anfrage.result.createObjectStore('lernstand');
+    anfrage.onsuccess = fertig;
+  });
+  indexedDB.roh(DB_NAME, 'lernstand').set('sks', { version: 1, karten: { a: karte(3, 1) } });
+
+  const speicher = await oeffneSpeicher({ indexedDB });
+  assert.equal((await speicher.lade('sks')).lernstand.karten.a.fach, 3);
+  await speicher.aendereProfil(richtig);
+  assert.equal(gesamtXp((await speicher.ladeProfil()).profil), 10);
 });

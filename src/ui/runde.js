@@ -5,6 +5,7 @@
 
 import { t } from './i18n.js';
 import { el } from './dom.js';
+import { hinweistext, levelbalken } from './fortschritt.js';
 import {
   optionsReihenfolge, buchstabe, bewerteMc, istLeer, freitextVorschlag, herkunftVon,
 } from '../engine/m3-fragetypen.js';
@@ -16,7 +17,9 @@ import {
  *   modus: 'normal' | 'vorziehen' | 'fehler',
  *   modul: object,
  *   themenTitel: Map<string, string>,
- *   onBewertung: (frage: object, richtig: boolean, uebung: boolean) => void,
+ *   onBewertung: (frage: object, richtig: boolean, uebung: boolean, modus: string) => number,
+ *   onRundenende?: (runde: {modus: string, beantwortet: number, gesamt: number, fehler: number}) =>
+ *     {zaehlt: boolean, bonus: number, fortschritt: object, hinweis: object},
  *   holeFaecher: () => number[],
  *   onFertig: () => void,
  * }} runde
@@ -24,6 +27,8 @@ import {
 export function zeigeRunde(ziel, runde) {
   const uebung = runde.modus !== 'normal';
   const ergebnisse = [];
+  let rundenXp = 0;          // XP aus den Antworten dieser Runde (M4)
+  let abschluss = null;      // Ergebnis von onRundenende, nur einmal je Runde
   let nr = 0;
   // Zustand der aktuellen Frage
   let aufgedeckt = false;
@@ -46,7 +51,7 @@ export function zeigeRunde(ziel, runde) {
 
   function bewerteUndWeiter(richtig) {
     const frage = runde.fragen[nr];
-    runde.onBewertung(frage, richtig, uebung);
+    rundenXp += runde.onBewertung(frage, richtig, uebung, runde.modus) ?? 0;
     ergebnisse.push({ frage, richtig });
     nr += 1;
     if (nr < runde.fragen.length) neueFrage();
@@ -250,15 +255,33 @@ export function zeigeRunde(ziel, runde) {
     const gewusst = ergebnisse.filter((e) => e.richtig).length;
     const fehler = ergebnisse.filter((e) => !e.richtig).map((e) => e.frage);
     const faecher = runde.holeFaecher();
+    if (!abschluss && ergebnisse.length > 0 && runde.onRundenende) {
+      abschluss = runde.onRundenende({
+        modus: runde.modus, beantwortet: ergebnisse.length, gesamt: runde.fragen.length, fehler: fehler.length,
+      });
+    }
 
     const karte = el('section', { class: 'karte' },
       el('p', { class: 'etikett' }, t(`runde.titel.${runde.modus}`)),
       el('h2', {}, ergebnisse.length === 0 ? t('auswertung.keineAntwort')
         : t('auswertung.gewusst', { gewusst, gesamt: ergebnisse.length })),
+      ergebnisse.length > 0
+        ? el('p', { class: 'trefferquote' }, t('auswertung.trefferquote', { prozent: Math.round((gewusst / ergebnisse.length) * 100) }))
+        : null,
       fehler.length === 0 && ergebnisse.length > 0 ? el('p', {}, t('auswertung.ohneFehler')) : null,
       uebung && ergebnisse.length > 0 ? el('p', { class: 'hinweis' }, t('runde.uebungHinweis')) : null,
       faecherleiste(faecher),
     );
+
+    // XP, Streak und Level am Rundenende (F-15).
+    const belohnung = abschluss ? el('section', { class: 'karte belohnung' },
+      el('p', { class: 'etikett' }, t('fortschritt.titel')),
+      el('p', { class: 'xp' }, t('auswertung.xp', { xp: rundenXp + abschluss.bonus })),
+      abschluss.bonus > 0 ? el('p', { class: 'hinweis oben' }, t('auswertung.bonus', { bonus: abschluss.bonus })) : null,
+      !abschluss.zaehlt && runde.modus !== 'fehler' ? el('p', { class: 'hinweis' }, t('auswertung.zaehltNicht')) : null,
+      el('p', { class: `erinnerung${abschluss.fortschritt.streak.heuteErreicht ? ' erreicht' : ''}` }, hinweistext(abschluss.hinweis)),
+      levelbalken(abschluss.fortschritt.level),
+    ) : null;
 
     const aktionen = el('div', { class: 'aktionen' });
     if (fehler.length > 0) {
@@ -271,7 +294,7 @@ export function zeigeRunde(ziel, runde) {
       type: 'button', class: fehler.length > 0 ? 'knopf zweitrangig' : 'knopf', onclick: runde.onFertig,
     }, t('auswertung.zurStartseite')));
 
-    ziel.replaceChildren(el('div', { class: 'inhalt' }, karte), aktionen);
+    ziel.replaceChildren(el('div', { class: 'inhalt' }, karte, belohnung), aktionen);
     window.scrollTo(0, 0);
   }
 

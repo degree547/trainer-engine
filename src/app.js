@@ -6,6 +6,9 @@ import {
   neuerLernstand, bewerte, bildeRunde, bildeVorgezogeneRunde, lernUebersicht, datumVon,
 } from './engine/m2-lernlogik.js';
 import {
+  neuesProfil, vergibAntwort, schliesseRundeAb, setzeTagesziel, fortschritt, startHinweis,
+} from './engine/m4-gamification.js';
+import {
   oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler,
 } from './engine/m7-speicherung.js';
 import { ladeTexte, t } from './ui/i18n.js';
@@ -20,9 +23,12 @@ const statuszeile = document.getElementById('status');
 
 // Zustand der App. Der Lernstand wird nach jeder Bewertung in der IndexedDB gespeichert (M7).
 // speicherFehler: Code, falls nicht gespeichert werden kann; dauerhaft: Antwort des Browsers auf persist().
+// profil: XP, Streak und Tagesziel (M4) für die ganze App; profilSpeichern: false, wenn das
+// gespeicherte Profil nicht gelesen werden konnte (dann wird es auch nicht überschrieben).
 const zustand = {
   modul: null, fehler: null, dateiname: '', lernstand: neuerLernstand(),
   speicher: null, speicherFehler: null, dauerhaft: 'unbekannt', verworfen: 0,
+  profil: neuesProfil(), profilSpeichern: true, profilVerworfen: 0, profilFehler: null, offeneProfilAenderungen: 0,
 };
 
 function zeigeStatus() {
@@ -41,12 +47,49 @@ function heute() {
   return datumVon(new Date());
 }
 
+/**
+ * Ändert das Profil (M4): sofort im Speicher der App, damit die Anzeige nicht warten muss,
+ * und danach in der IndexedDB. Dort wird die Änderung auf den gespeicherten Stand angewendet,
+ * damit XP aus einem zweiten Tab nicht verloren gehen.
+ * @param {(profil: object) => {profil: object}} aenderung Funktion aus M4
+ * @returns {object} Ergebnis der Änderung im Speicher der App
+ */
+function aendereProfil(aenderung) {
+  const ergebnis = aenderung(zustand.profil);
+  zustand.profil = ergebnis.profil;
+  const { speicher } = zustand;
+  if (speicher && zustand.profilSpeichern) {
+    zustand.offeneProfilAenderungen += 1;
+    speicher.aendereProfil(aenderung)
+      .then((gespeichert) => {
+        zustand.offeneProfilAenderungen -= 1;
+        // Erst übernehmen, wenn keine weitere Änderung unterwegs ist, sonst fehlte sie kurz.
+        if (zustand.offeneProfilAenderungen === 0) zustand.profil = gespeichert.profil;
+        zustand.profilFehler = null;
+      })
+      .catch((fehler) => {
+        zustand.offeneProfilAenderungen -= 1;
+        zustand.profilFehler = speicherCode(fehler, 'speicher.schreibfehler');
+      });
+  }
+  return ergebnis;
+}
+
 function zurStartseite() {
   const { modul, fehler, dateiname, lernstand } = zustand;
   zeigeStart(hauptbereich, {
     modul, fehler, dateiname,
     lernen: modul ? lernUebersicht(modul, lernstand, heute()) : null,
-    speicherung: { fehler: zustand.speicherFehler, dauerhaft: zustand.dauerhaft, verworfen: zustand.verworfen },
+    fortschritt: fortschritt(zustand.profil, heute()),
+    hinweis: startHinweis(zustand.profil, heute()),
+    onTagesziel: (wert) => {
+      aendereProfil((profil) => ({ profil: setzeTagesziel(profil, wert, heute()) }));
+      zurStartseite();
+    },
+    speicherung: {
+      fehler: zustand.speicherFehler ?? zustand.profilFehler, dauerhaft: zustand.dauerhaft,
+      verworfen: zustand.verworfen + zustand.profilVerworfen,
+    },
     onDatei: ladeDatei, onStandard: ladeStandard,
     onRunde: () => starteRunde('normal'),
     onVorziehen: () => starteRunde('vorziehen'),
@@ -62,9 +105,14 @@ function starteRunde(modus) {
     modus,
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
-    onBewertung: (frage, richtig, uebung) => {
+    onBewertung: (frage, richtig, uebung, rundenModus) => {
       zustand.lernstand = bewerte(zustand.lernstand, frage.id, richtig, heute(), { uebung });
       speichere();
+      return aendereProfil((profil) => vergibAntwort(profil, { richtig, modus: rundenModus }, heute())).xp;
+    },
+    onRundenende: (runde) => {
+      const { zaehlt, bonus } = aendereProfil((profil) => schliesseRundeAb(profil, runde, heute()));
+      return { zaehlt, bonus, fortschritt: fortschritt(zustand.profil, heute()), hinweis: startHinweis(zustand.profil, heute()) };
     },
     holeFaecher: () => lernUebersicht(modul, zustand.lernstand, heute()).faecher,
     onFertig: zurStartseite,
@@ -96,6 +144,18 @@ async function ladeLernstand() {
   } catch (fehler) {
     // Nicht speichern, damit ein unlesbarer oder neuerer Stand nicht überschrieben wird.
     Object.assign(zustand, { speicher: null, speicherFehler: speicherCode(fehler, 'speicher.lesefehler') });
+  }
+}
+
+/** Lädt XP, Streak und Tagesziel. Ein unlesbares Profil wird nicht überschrieben. */
+async function ladeProfil() {
+  if (!zustand.speicher) return;
+  try {
+    const { profil, verworfen } = await zustand.speicher.ladeProfil();
+    zustand.profil = profil;
+    zustand.profilVerworfen = verworfen;
+  } catch (fehler) {
+    Object.assign(zustand, { profilSpeichern: false, profilFehler: speicherCode(fehler, 'speicher.lesefehler') });
   }
 }
 
@@ -140,6 +200,7 @@ async function start() {
   } catch (fehler) {
     zustand.speicherFehler = speicherCode(fehler, 'speicher.nichtVerfuegbar');
   }
+  await ladeProfil();
 
   await ladeStandard();
 }

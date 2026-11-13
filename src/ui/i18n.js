@@ -28,3 +28,11 @@ export function t(schluessel, werte) {
   const text = texte[schluessel];
   return text === undefined ? schluessel : fuelle(text, werte);
 }
+
+/**
+ * Text mit Einzahl oder Mehrzahl: nimmt „<schluessel>.eins“ für 1, sonst „<schluessel>.mehr“.
+ * Die Zahl steht im Text als {anzahl} zur Verfügung.
+ */
+export function tn(schluessel, anzahl, werte = {}) {
+  return t(`${schluessel}.${anzahl === 1 ? 'eins' : 'mehr'}`, { anzahl, ...werte });
+}

@@ -202,3 +202,30 @@ main {
 .faecher .fachnr { font-size: 0.75rem; color: var(--text-leise); }
 .faecher .zahl { font-weight: 600; font-variant-numeric: tabular-nums; }
 .lernknoepfe { margin-top: 1rem; }
+
+/* Gamification (AP6): Lernerinnerung, Level, Tagesziel, Belohnung am Rundenende */
+.erinnerung {
+  margin: 0.25rem 0 0.75rem; padding: 0.625rem 0.75rem;
+  border-left: 4px solid var(--akzent); border-radius: 0.5rem;
+  background: var(--hintergrund); font-weight: 600; line-height: 1.4;
+}
+.erinnerung.erreicht { border-left-color: var(--ok); }
+.erreicht { color: var(--ok); }
+
+.level { margin: 0 0 0.75rem; }
+.levelzeile { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin: 0 0 0.375rem; }
+.leise { color: var(--text-leise); font-size: 0.875rem; }
+.balken.levelbalken { height: 0.625rem; margin-top: 0; }
+
+.zielwahl { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--rand); }
+.zielwahl label { color: var(--text-leise); }
+.auswahl {
+  min-height: 2.75rem; padding: 0.5rem 0.75rem; border: 2px solid var(--rand); border-radius: 0.75rem;
+  background: var(--flaeche); color: var(--text); font: inherit;
+}
+.auswahl:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+
+.trefferquote { margin: -0.25rem 0 0.5rem; color: var(--text-leise); }
+.belohnung .xp { margin: 0; font-size: 2rem; font-weight: 700; color: var(--akzent); font-variant-numeric: tabular-nums; }
+.belohnung .erinnerung { margin-top: 0.75rem; }
+.belohnung .level { margin: 0; }

@@ -23,7 +23,7 @@ test('jeder Fehlercode aus M1 und M8 hat einen Text', async () => {
 
 test('jeder Speicher-Code aus M7 und app.js hat einen Text', async () => {
   const de = JSON.parse(await lies('src/i18n/de.json'));
-  const quelltext = (await lies('src/engine/m7-speicherung.js')) + (await lies('src/app.js'));
+  const quelltext = (await lies('src/engine/m7-speicherung.js')) + (await lies('src/engine/m4-gamification.js')) + (await lies('src/app.js'));
   const codes = new Set(quelltext.match(/'speicher\.\w+'/g).map((c) => c.slice(1, -1)));
   assert.ok(codes.size >= 6);
   for (const code of codes) assert.ok(code in de, `Text fehlt für ${code}`);
@@ -46,8 +46,8 @@ test('alle Dateien im Service-Worker-Cache existieren', async () => {
 
 test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
   const sw = await lies('sw.js');
-  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m3-fragetypen.js', 'src/engine/m7-speicherung.js', 'src/engine/m8-inhaltsformat.js',
-    'src/ui/dom.js', 'src/ui/i18n.js', 'src/ui/start.js', 'src/ui/runde.js', 'content/sks/sks.json']) {
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m3-fragetypen.js', 'src/engine/m4-gamification.js', 'src/engine/m7-speicherung.js', 'src/engine/m8-inhaltsformat.js',
+    'src/ui/dom.js', 'src/ui/i18n.js', 'src/ui/start.js', 'src/ui/runde.js', 'src/ui/fortschritt.js', 'content/sks/sks.json']) {
     assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
   }
 });
@@ -85,4 +85,12 @@ test('jeder Text, den die Bildschirme verwenden, steht in de.json', async () => 
   for (const modus of ['normal', 'vorziehen', 'fehler']) schluessel.add(`runde.titel.${modus}`);
   assert.ok(schluessel.size > 20);
   for (const s of schluessel) assert.ok(s in de, `Text fehlt für ${s}`);
+});
+
+test('jeder Hinweis aus M4 hat Texte für Einzahl und Mehrzahl', async () => {
+  const de = JSON.parse(await lies('src/i18n/de.json'));
+  const quelltext = await lies('src/engine/m4-gamification.js');
+  const codes = new Set(quelltext.match(/'hinweis\.\w+'/g).map((c) => c.slice(1, -1)));
+  assert.ok(codes.size >= 5);
+  for (const code of codes) for (const form of ['eins', 'mehr']) assert.ok(`${code}.${form}` in de, `Text fehlt für ${code}.${form}`);
 });

@@ -15,12 +15,21 @@
 // Speichern führt den Lernstand im Speicher mit dem gespeicherten zusammen
 // (je Frage gewinnt der jüngere Eintrag). So gehen keine Antworten verloren, wenn
 // die App in zwei Tabs oder als installierte App und im Browser zugleich offen ist.
+//
+// Seit Datenbankversion 2 gibt es den Objektspeicher "profil" mit einem einzigen
+// Eintrag (Schlüssel "profil"): XP, Streak und Tagesziel aus M4, für die ganze App.
+// Das Profil wird nicht als Ganzes überschrieben, sondern mit aendereProfil()
+// innerhalb einer Transaktion gelesen, geändert und geschrieben. So zählen XP aus
+// zwei offenen Tabs beide.
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
+import { pruefeProfil, ProfilFehler } from './m4-gamification.js';
 
 export const DB_NAME = 'trainer-engine';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 const SPEICHER = 'lernstand';
+const PROFIL = 'profil';
+const PROFIL_SCHLUESSEL = 'profil';
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -78,6 +87,16 @@ export function fuehreZusammen(a, b) {
   return { version: LERNSTAND_VERSION, karten };
 }
 
+/** Prüft ein gespeichertes Profil (M4) und meldet Probleme als SpeicherFehler. */
+function profilAus(daten) {
+  try {
+    return pruefeProfil(daten);
+  } catch (fehler) {
+    if (fehler instanceof ProfilFehler) throw new SpeicherFehler(fehler.code);
+    throw fehler;
+  }
+}
+
 /** IndexedDB-Anfrage als Promise. */
 function alsPromise(anfrage) {
   return new Promise((erfuellt, abgelehnt) => {
@@ -109,6 +128,7 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
     anfrage.onupgradeneeded = () => {
       const neu = anfrage.result;
       if (!neu.objectStoreNames.contains(SPEICHER)) neu.createObjectStore(SPEICHER);
+      if (!neu.objectStoreNames.contains(PROFIL)) neu.createObjectStore(PROFIL);
     };
     db = await alsPromise(anfrage);
   } catch (fehler) {
@@ -117,6 +137,11 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
 
   // Schreibvorgänge nacheinander ausführen, damit ein älterer nie einen jüngeren überholt.
   let warteschlange = Promise.resolve();
+  function reiheEin(arbeit) {
+    const auftrag = warteschlange.then(arbeit);
+    warteschlange = auftrag.catch(() => {});
+    return auftrag;
+  }
 
   return {
     /**
@@ -134,7 +159,7 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
      * @returns {Promise<object>}
      */
     speichere(modulId, lernstand) {
-      const auftrag = warteschlange.then(async () => {
+      return reiheEin(async () => {
         const tx = db.transaction(SPEICHER, 'readwrite');
         const speicher = tx.objectStore(SPEICHER);
         const fertig = transaktionFertig(tx);
@@ -144,8 +169,43 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
         await fertig;
         return zusammen;
       });
-      warteschlange = auftrag.catch(() => {});
-      return auftrag;
+    },
+
+    /**
+     * Lädt das Profil (XP, Streak, Tagesziel). Gibt es noch keines, wird gleich ein
+     * neues mit einer festen Geräte-ID angelegt.
+     * @returns {Promise<{profil: object, verworfen: number}>}
+     */
+    ladeProfil() {
+      return reiheEin(async () => {
+        const tx = db.transaction(PROFIL, 'readwrite');
+        const speicher = tx.objectStore(PROFIL);
+        const fertig = transaktionFertig(tx);
+        const daten = await alsPromise(speicher.get(PROFIL_SCHLUESSEL));
+        const ergebnis = profilAus(daten);
+        if (daten == null) speicher.put(ergebnis.profil, PROFIL_SCHLUESSEL);
+        await fertig;
+        return ergebnis;
+      });
+    },
+
+    /**
+     * Ändert das gespeicherte Profil: lesen, `aenderung(profil)` anwenden, schreiben.
+     * `aenderung` liefert { profil, ... } (wie die Funktionen aus M4) und darf nichts
+     * Asynchrones tun. Zurück kommt dieses Ergebnis, nachdem gespeichert ist.
+     * @returns {Promise<object>}
+     */
+    aendereProfil(aenderung) {
+      return reiheEin(async () => {
+        const tx = db.transaction(PROFIL, 'readwrite');
+        const speicher = tx.objectStore(PROFIL);
+        const fertig = transaktionFertig(tx);
+        const { profil } = profilAus(await alsPromise(speicher.get(PROFIL_SCHLUESSEL)));
+        const ergebnis = aenderung(profil);
+        speicher.put(ergebnis.profil, PROFIL_SCHLUESSEL);
+        await fertig;
+        return ergebnis;
+      });
     },
 
     schliesse() {

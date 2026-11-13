@@ -4,6 +4,7 @@
 import { t } from './i18n.js';
 import { el } from './dom.js';
 import { faecherleiste } from './runde.js';
+import { hinweistext, levelbalken, fortschrittszahlen, tageszielwahl } from './fortschritt.js';
 import { modulUebersicht } from '../engine/m1-kern.js';
 
 /** Ort eines Formatfehlers in Klartext, z. B. „Zeile 12 · Frage 3 (sks-nav-003)“. */
@@ -37,6 +38,7 @@ export function fehlertext(fehler) {
  * @param {HTMLElement} ziel
  * @param {{modul?: object, fehler?: Error, dateiname?: string,
  *          lernen?: {faellig: number, neu: number, spaeter: number, faecher: number[]},
+ *          fortschritt?: object, hinweis?: {code: string, werte: object}, onTagesziel?: (wert: number) => void,
  *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
  *          onRunde: () => void, onVorziehen: () => void}} zustand
@@ -46,6 +48,7 @@ export function zeigeStart(ziel, zustand) {
   const lernen = zustand.modul ? zustand.lernen : null;
 
   if (lernen) inhalt.push(lernkarte(lernen, zustand));
+  if (lernen && zustand.fortschritt) inhalt.push(fortschrittskarte(zustand));
 
   if (zustand.modul) {
     const u = modulUebersicht(zustand.modul);
@@ -105,13 +108,30 @@ function lernkarte(lernen, zustand) {
   if (lernen.spaeter > 0) {
     knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onVorziehen }, t('lernen.vorziehen')));
   }
+  // Lernerinnerung beim Start: Tagesziel und Streak (statt Benachrichtigungen).
+  const erinnerung = zustand.hinweis
+    ? el('p', { class: `erinnerung${zustand.fortschritt?.streak.heuteErreicht ? ' erreicht' : ''}`, role: 'status' },
+      hinweistext(zustand.hinweis))
+    : null;
   return el('section', { class: 'karte' },
     el('p', { class: 'etikett' }, t('lernen.titel')),
+    erinnerung,
     el('h2', {}, lernen.faellig + lernen.neu > 0 ? t('lernen.bereit') : t('lernen.allesErledigt')),
     liste,
     faecherleiste(lernen.faecher),
     knoepfe.childElementCount > 0 ? knoepfe : null,
     ...speicherhinweise(zustand.speicherung ?? {}),
+  );
+}
+
+/** XP, Level, Streak und Tagesziel (F-13, F-14). */
+function fortschrittskarte(zustand) {
+  const f = zustand.fortschritt;
+  return el('section', { class: 'karte' },
+    el('p', { class: 'etikett' }, t('fortschritt.titel')),
+    levelbalken(f.level),
+    fortschrittszahlen(f),
+    zustand.onTagesziel ? tageszielwahl(f.streak.ziel, zustand.onTagesziel) : null,
   );
 }
 
