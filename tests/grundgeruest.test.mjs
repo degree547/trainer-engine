@@ -38,8 +38,8 @@ test('alle Dateien im Service-Worker-Cache existieren', async () => {
 
 test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
   const sw = await lies('sw.js');
-  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m8-inhaltsformat.js',
-    'src/ui/i18n.js', 'src/ui/start.js', 'content/sks/sks.json']) {
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m8-inhaltsformat.js',
+    'src/ui/dom.js', 'src/ui/i18n.js', 'src/ui/start.js', 'src/ui/runde.js', 'content/sks/sks.json']) {
     assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
   }
 });
@@ -68,4 +68,13 @@ test('Testserver liefert nichts aus privat/ und nichts außerhalb des Projekts',
   assert.equal(pfadZuDatei('/trainer-engine/../geheim.txt'), null);
   assert.equal(pfadZuDatei('/trainer-engine/%2e%2e/geheim.txt'), null);
   assert.equal(pfadZuDatei('/anderes/index.html'), null);
+});
+
+test('jeder Text, den die Bildschirme verwenden, steht in de.json', async () => {
+  const de = JSON.parse(await lies('src/i18n/de.json'));
+  const quelltext = (await lies('src/app.js')) + (await lies('src/ui/start.js')) + (await lies('src/ui/runde.js'));
+  const schluessel = new Set([...quelltext.matchAll(/\bt\('([\w.]+)'/g)].map((m) => m[1]));
+  for (const modus of ['normal', 'vorziehen', 'fehler']) schluessel.add(`runde.titel.${modus}`);
+  assert.ok(schluessel.size > 20);
+  for (const s of schluessel) assert.ok(s in de, `Text fehlt für ${s}`);
 });

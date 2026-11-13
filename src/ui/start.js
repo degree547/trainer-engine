@@ -1,17 +1,10 @@
-// Startbildschirm: zeigt das geladene Inhaltsmodul und erlaubt das Laden einer Moduldatei.
+// Startbildschirm: Lernstand mit „Runde starten“, das geladene Inhaltsmodul
+// und das Laden einer Moduldatei.
 
 import { t } from './i18n.js';
+import { el } from './dom.js';
+import { faecherleiste } from './runde.js';
 import { modulUebersicht } from '../engine/m1-kern.js';
-
-function el(tag, attribute = {}, ...kinder) {
-  const knoten = document.createElement(tag);
-  for (const [name, wert] of Object.entries(attribute)) {
-    if (name === 'onclick' || name === 'onchange') knoten.addEventListener(name.slice(2), wert);
-    else knoten.setAttribute(name, wert);
-  }
-  for (const kind of kinder) knoten.append(kind);
-  return knoten;
-}
 
 /** Ort eines Formatfehlers in Klartext, z. B. „Zeile 12 · Frage 3 (sks-nav-003)“. */
 function ortstext(f) {
@@ -43,10 +36,15 @@ export function fehlertext(fehler) {
 /**
  * @param {HTMLElement} ziel
  * @param {{modul?: object, fehler?: Error, dateiname?: string,
- *          onDatei: (file: File) => void, onStandard: () => void}} zustand
+ *          lernen?: {faellig: number, neu: number, spaeter: number, faecher: number[]},
+ *          onDatei: (file: File) => void, onStandard: () => void,
+ *          onRunde: () => void, onVorziehen: () => void}} zustand
  */
 export function zeigeStart(ziel, zustand) {
   const inhalt = [];
+  const lernen = zustand.modul ? zustand.lernen : null;
+
+  if (lernen) inhalt.push(lernkarte(lernen, zustand));
 
   if (zustand.modul) {
     const u = modulUebersicht(zustand.modul);
@@ -84,11 +82,34 @@ export function zeigeStart(ziel, zustand) {
   });
   const aktionen = el('div', { class: 'aktionen' },
     eingabe,
-    el('label', { for: 'moduldatei', class: 'knopf' }, t('start.dateiLaden')),
+    el('label', { for: 'moduldatei', class: lernen ? 'knopf zweitrangig' : 'knopf' }, t('start.dateiLaden')),
   );
   if (zustand.dateiname || zustand.fehler) {
     aktionen.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onStandard }, t('start.standardLaden')));
   }
 
   ziel.replaceChildren(el('div', { class: 'inhalt' }, ...inhalt), aktionen);
+}
+
+/** Lernstand auf einen Blick: fällig, neu, Fächer – mit den Knöpfen zum Lernen ganz oben. */
+function lernkarte(lernen, zustand) {
+  const liste = el('dl', { class: 'kennzahlen' },
+    el('dt', {}, t('lernen.faellig')), el('dd', {}, String(lernen.faellig)),
+    el('dt', {}, t('lernen.neu')), el('dd', {}, String(lernen.neu)),
+  );
+  const knoepfe = el('div', { class: 'aktionen lernknoepfe' });
+  if (lernen.faellig + lernen.neu > 0) {
+    knoepfe.append(el('button', { type: 'button', class: 'knopf', onclick: zustand.onRunde }, t('lernen.rundeStarten')));
+  }
+  if (lernen.spaeter > 0) {
+    knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onVorziehen }, t('lernen.vorziehen')));
+  }
+  return el('section', { class: 'karte' },
+    el('p', { class: 'etikett' }, t('lernen.titel')),
+    el('h2', {}, lernen.faellig + lernen.neu > 0 ? t('lernen.bereit') : t('lernen.allesErledigt')),
+    liste,
+    faecherleiste(lernen.faecher),
+    knoepfe.childElementCount > 0 ? knoepfe : null,
+    el('p', { class: 'hinweis' }, t('lernen.nichtGespeichert')),
+  );
 }

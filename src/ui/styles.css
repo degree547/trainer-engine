@@ -88,7 +88,7 @@ main {
 .themen li { display: flex; justify-content: space-between; gap: 1rem; }
 .themen .zahl { font-weight: 600; font-variant-numeric: tabular-nums; }
 
-.hinweis { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--text-leise); word-break: break-all; }
+.hinweis { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--text-leise); overflow-wrap: anywhere; }
 
 .fehler { background: var(--fehler-flaeche); color: var(--fehler); border-color: var(--fehler); white-space: pre-line; }
 
@@ -117,3 +117,37 @@ main {
 .knopf.zweitrangig { background: transparent; color: var(--akzent); border: 2px solid var(--akzent); }
 
 .versteckt { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* Runde (AP3) */
+.rundenkopf { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.rundenkopf .etikett { margin: 0; }
+
+.textknopf {
+  border: none; background: none; padding: 0.5rem 0; min-height: 2.75rem;
+  font: inherit; font-size: 0.9375rem; color: var(--akzent); cursor: pointer;
+}
+
+.balken { height: 0.375rem; border-radius: 1rem; background: var(--rand); overflow: hidden; margin-top: -0.5rem; }
+.balken span { display: block; height: 100%; background: var(--akzent); transition: width 0.2s; }
+
+.fragetext { font-size: 1.1875rem; line-height: 1.45; white-space: pre-line; }
+
+.optionen { margin: 0.75rem 0 0; padding-left: 1.5rem; display: flex; flex-direction: column; gap: 0.375rem; }
+.optionen .korrekt { color: var(--ok); font-weight: 600; }
+
+.aufloesung { border-color: var(--akzent); scroll-margin-top: 1rem; }
+.aufloesung .etikett:not(:first-child) { margin-top: 0.75rem; }
+.antworttext { margin: 0; white-space: pre-line; }
+.quelle { margin: 0.75rem 0 0; font-size: 0.8125rem; color: var(--text-leise); }
+
+.aktionen.nebeneinander { flex-direction: row; }
+.aktionen.nebeneinander .knopf { flex: 1; }
+.knopf.richtig { background: var(--ok); color: var(--akzent-text); }
+.knopf.falsch { background: transparent; color: var(--fehler); border: 2px solid var(--fehler); }
+
+.faecher { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--rand); }
+.faecher ol { list-style: none; margin: 0.25rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.375rem; }
+.faecher li { display: flex; flex-direction: column; align-items: center; padding: 0.375rem 0; border-radius: 0.5rem; background: var(--hintergrund); }
+.faecher .fachnr { font-size: 0.75rem; color: var(--text-leise); }
+.faecher .zahl { font-weight: 600; font-variant-numeric: tabular-nums; }
+.lernknoepfe { margin-top: 1rem; }
