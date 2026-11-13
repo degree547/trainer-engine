@@ -37,6 +37,7 @@ export function fehlertext(fehler) {
  * @param {HTMLElement} ziel
  * @param {{modul?: object, fehler?: Error, dateiname?: string,
  *          lernen?: {faellig: number, neu: number, spaeter: number, faecher: number[]},
+ *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
  *          onRunde: () => void, onVorziehen: () => void}} zustand
  */
@@ -110,6 +111,15 @@ function lernkarte(lernen, zustand) {
     liste,
     faecherleiste(lernen.faecher),
     knoepfe.childElementCount > 0 ? knoepfe : null,
-    el('p', { class: 'hinweis' }, t('lernen.nichtGespeichert')),
+    ...speicherhinweise(zustand.speicherung ?? {}),
   );
+}
+
+/** Hinweise zur Speicherung, nur wenn etwas zu beachten ist. */
+function speicherhinweise({ fehler, dauerhaft, verworfen }) {
+  const hinweise = [];
+  if (fehler) hinweise.push(el('p', { class: 'hinweis warnung', role: 'status' }, t(fehler)));
+  else if (dauerhaft === 'nichtDauerhaft') hinweise.push(el('p', { class: 'hinweis' }, t('speicher.nichtDauerhaft')));
+  if (verworfen > 0) hinweise.push(el('p', { class: 'hinweis warnung' }, t('speicher.verworfen', { anzahl: verworfen })));
+  return hinweise;
 }

@@ -17,6 +17,8 @@ const modul = {
   fragen: [frage('x-a-1', 'x-a'), frage('x-b-1', 'x-b'), frage('x-a-2', 'x-a'), frage('x-b-2', 'x-b')],
 };
 const ids = (fragen) => fragen.map((f) => f.id);
+// Vergleich ohne den genauen Zeitstempel, der eigens geprüft wird.
+const ohneZeit = ({ geaendert, ...karte }) => karte;
 
 test('Datum: Ortszeit, Monats- und Jahreswechsel, Zeitumstellung', () => {
   assert.equal(datumVon(new Date(2026, 10, 22, 23, 59)), '2026-11-22');
@@ -37,9 +39,9 @@ test('Abstände je Fach: 1, 2, 4, 8, 16 Tage', () => {
 test('F-03: richtig = ein Fach höher, Termin nach dem Abstand des neuen Fachs', () => {
   let ls = neuerLernstand();
   ls = bewerte(ls, 'x-a-1', true, HEUTE);
-  assert.deepEqual(ls.karten['x-a-1'], { fach: 2, faellig: '2026-11-24', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(ls.karten['x-a-1']), { fach: 2, faellig: '2026-11-24', zuletzt: HEUTE });
   ls = bewerte(ls, 'x-a-1', true, '2026-11-24');
-  assert.deepEqual(ls.karten['x-a-1'], { fach: 3, faellig: '2026-11-28', zuletzt: '2026-11-24' });
+  assert.deepEqual(ohneZeit(ls.karten['x-a-1']), { fach: 3, faellig: '2026-11-28', zuletzt: '2026-11-24' });
   ls = bewerte(ls, 'x-a-1', true, '2026-11-28');
   assert.equal(ls.karten['x-a-1'].fach, 4);
   assert.equal(ls.karten['x-a-1'].faellig, '2026-12-06');
@@ -48,28 +50,39 @@ test('F-03: richtig = ein Fach höher, Termin nach dem Abstand des neuen Fachs',
   assert.equal(ls.karten['x-a-1'].faellig, '2026-12-22');
   // In Fach 5 bleibt die Frage, der Abstand bleibt 16 Tage.
   ls = bewerte(ls, 'x-a-1', true, '2026-12-22');
-  assert.deepEqual(ls.karten['x-a-1'], { fach: 5, faellig: '2027-01-07', zuletzt: '2026-12-22' });
+  assert.deepEqual(ohneZeit(ls.karten['x-a-1']), { fach: 5, faellig: '2027-01-07', zuletzt: '2026-12-22' });
 });
 
 test('F-03: falsch = zurück in Fach 1, spätestens am nächsten Tag wieder fällig', () => {
   let ls = neuerLernstand();
   ls = bewerte(ls, 'x-a-1', false, HEUTE);
-  assert.deepEqual(ls.karten['x-a-1'], { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(ls.karten['x-a-1']), { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
   ls = { ...ls, karten: { ...ls.karten, 'x-a-2': { fach: 5, faellig: '2026-12-01', zuletzt: '2026-11-15' } } };
   ls = bewerte(ls, 'x-a-2', false, HEUTE);
-  assert.deepEqual(ls.karten['x-a-2'], { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(ls.karten['x-a-2']), { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
 });
 
 test('Übung: richtig ändert Fach und Termin nicht, falsch setzt zurück', () => {
   const start = { version: 1, karten: { 'x-a-1': { fach: 3, faellig: '2026-11-25', zuletzt: '2026-11-21' } } };
   const richtig = bewerte(start, 'x-a-1', true, HEUTE, { uebung: true });
-  assert.deepEqual(richtig.karten['x-a-1'], { fach: 3, faellig: '2026-11-25', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(richtig.karten['x-a-1']), { fach: 3, faellig: '2026-11-25', zuletzt: HEUTE });
   const falsch = bewerte(start, 'x-a-1', false, HEUTE, { uebung: true });
-  assert.deepEqual(falsch.karten['x-a-1'], { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(falsch.karten['x-a-1']), { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
   // Fehler-Durchlauf: in der Runde falsch, danach richtig -> bleibt in Fach 1, morgen fällig.
   let ls = bewerte(neuerLernstand(), 'x-b-1', false, HEUTE);
   ls = bewerte(ls, 'x-b-1', true, HEUTE, { uebung: true });
-  assert.deepEqual(ls.karten['x-b-1'], { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
+  assert.deepEqual(ohneZeit(ls.karten['x-b-1']), { fach: 1, faellig: '2026-11-23', zuletzt: HEUTE });
+});
+
+test('bewerte setzt den genauen Zeitpunkt der Bewertung (für das Zusammenführen)', () => {
+  let ls = bewerte(neuerLernstand(), 'x-a-1', true, HEUTE, { jetzt: 1000 });
+  assert.equal(ls.karten['x-a-1'].geaendert, 1000);
+  ls = bewerte(ls, 'x-a-1', true, HEUTE, { uebung: true, jetzt: 2000 });
+  assert.equal(ls.karten['x-a-1'].geaendert, 2000);
+  ls = bewerte(ls, 'x-a-1', false, HEUTE, { jetzt: 3000 });
+  assert.equal(ls.karten['x-a-1'].geaendert, 3000);
+  const vorher = Date.now();
+  assert.ok(bewerte(ls, 'x-b-1', true, HEUTE).karten['x-b-1'].geaendert >= vorher);
 });
 
 test('bewerte verändert den alten Lernstand nicht', () => {

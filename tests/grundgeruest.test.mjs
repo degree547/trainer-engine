@@ -21,6 +21,14 @@ test('jeder Fehlercode aus M1 und M8 hat einen Text', async () => {
   for (const code of codes) assert.ok(code in de, `Text fehlt für ${code}`);
 });
 
+test('jeder Speicher-Code aus M7 und app.js hat einen Text', async () => {
+  const de = JSON.parse(await lies('src/i18n/de.json'));
+  const quelltext = (await lies('src/engine/m7-speicherung.js')) + (await lies('src/app.js'));
+  const codes = new Set(quelltext.match(/'speicher\.\w+'/g).map((c) => c.slice(1, -1)));
+  assert.ok(codes.size >= 6);
+  for (const code of codes) assert.ok(code in de, `Text fehlt für ${code}`);
+});
+
 test('Platzhalter und Sprachwahl', () => {
   assert.equal(fuelle('Datei: {name}', { name: 'a.json' }), 'Datei: a.json');
   assert.equal(fuelle('{unbekannt}', {}), '{unbekannt}');
@@ -38,7 +46,7 @@ test('alle Dateien im Service-Worker-Cache existieren', async () => {
 
 test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
   const sw = await lies('sw.js');
-  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m8-inhaltsformat.js',
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m7-speicherung.js', 'src/engine/m8-inhaltsformat.js',
     'src/ui/dom.js', 'src/ui/i18n.js', 'src/ui/start.js', 'src/ui/runde.js', 'content/sks/sks.json']) {
     assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
   }

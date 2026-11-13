@@ -90,6 +90,7 @@ main {
 
 .hinweis { margin: 0.75rem 0 0; font-size: 0.875rem; color: var(--text-leise); overflow-wrap: anywhere; }
 
+.hinweis.warnung { color: var(--fehler); }
 .fehler { background: var(--fehler-flaeche); color: var(--fehler); border-color: var(--fehler); white-space: pre-line; }
 
 .aktionen { display: flex; flex-direction: column; gap: 0.75rem; }

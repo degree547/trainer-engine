@@ -2,8 +2,11 @@
 // Das Modul kennt keine Prüfungsinhalte. Es arbeitet nur mit Frage-IDs,
 // Themen-IDs und der Reihenfolge, die das Inhaltsmodul vorgibt.
 //
-// Lernstand (wird ab AP5 von M7 gespeichert):
-//   { version: 1, karten: { "<frage-id>": { fach: 1..5, faellig: "JJJJ-MM-TT", zuletzt: "JJJJ-MM-TT" } } }
+// Lernstand (wird von M7 gespeichert):
+//   { version: 1, karten: { "<frage-id>": { fach: 1..5, faellig: "JJJJ-MM-TT", zuletzt: "JJJJ-MM-TT",
+//                                           geaendert: <Millisekunden seit 1970> } } }
+// "geaendert" ist der genaue Zeitpunkt der letzten Bewertung. Damit lassen sich zwei
+// Lernstände (zwei Geräte, zwei Tabs) je Frage zusammenführen: der jüngere Eintrag gewinnt.
 // Eine Frage ohne Eintrag in "karten" ist neu. Einträge zu Fragen, die es im
 // Modul nicht mehr gibt, bleiben erhalten, werden aber übersprungen (F-23).
 //
@@ -49,20 +52,21 @@ export function neuerLernstand() {
  * @param {string} frageId
  * @param {boolean} richtig
  * @param {string} heute "JJJJ-MM-TT"
- * @param {{uebung?: boolean}} [optionen] Übung: richtig ändert Fach und Termin nicht
+ * @param {{uebung?: boolean, jetzt?: number}} [optionen] Übung: richtig ändert Fach und Termin nicht;
+ *   jetzt: Zeitpunkt für "geaendert" (Standard: Date.now())
  */
-export function bewerte(lernstand, frageId, richtig, heute, { uebung = false } = {}) {
+export function bewerte(lernstand, frageId, richtig, heute, { uebung = false, jetzt = Date.now() } = {}) {
   if (!DATUM.test(heute)) throw new Error(`Ungültiges Datum: ${heute}`);
   const alt = lernstand.karten[frageId];
   let karte;
   if (!richtig) {
-    karte = { fach: 1, faellig: plusTage(heute, ABSTAENDE[0]), zuletzt: heute };
+    karte = { fach: 1, faellig: plusTage(heute, ABSTAENDE[0]), zuletzt: heute, geaendert: jetzt };
   } else if (uebung && alt) {
-    karte = { ...alt, zuletzt: heute };
+    karte = { ...alt, zuletzt: heute, geaendert: jetzt };
   } else {
     // Eine neue Frage gilt als Fach 1; richtig beantwortet kommt sie in Fach 2.
     const fach = Math.min((alt?.fach ?? 1) + 1, FAECHER);
-    karte = { fach, faellig: plusTage(heute, ABSTAENDE[fach - 1]), zuletzt: heute };
+    karte = { fach, faellig: plusTage(heute, ABSTAENDE[fach - 1]), zuletzt: heute, geaendert: jetzt };
   }
   return { ...lernstand, karten: { ...lernstand.karten, [frageId]: karte } };
 }

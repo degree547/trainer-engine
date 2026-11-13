@@ -62,7 +62,6 @@
   "lernen.neu": "Neue Fragen",
   "lernen.faecher": "Fragen je Fach (1 = neu gelernt, 5 = sicher)",
   "lernen.fachLabel": "Fach {fach}: {anzahl} Fragen",
-  "lernen.nichtGespeichert": "Der Lernstand wird noch nicht gespeichert und geht beim Neuladen der Seite verloren.",
   "lernen.rundeStarten": "Runde starten",
   "lernen.vorziehen": "Wiederholung vorziehen",
   "runde.titel.normal": "Runde",
@@ -81,5 +80,13 @@
   "auswertung.keineAntwort": "Keine Frage beantwortet",
   "auswertung.ohneFehler": "Ohne Fehler – sehr gut!",
   "auswertung.fehlerWiederholen": "Fehler gleich wiederholen ({anzahl})",
-  "auswertung.zurStartseite": "Zur Startseite"
+  "auswertung.zurStartseite": "Zur Startseite",
+  "speicher.nichtVerfuegbar": "Dieser Browser kann den Lernstand nicht speichern (zum Beispiel in einem privaten Fenster). Er geht beim Schließen der Seite verloren.",
+  "speicher.unlesbar": "Der gespeicherte Lernstand ist nicht lesbar. Er wird nicht überschrieben, neue Antworten werden deshalb vorerst nicht gespeichert.",
+  "speicher.lesefehler": "Der gespeicherte Lernstand konnte nicht gelesen werden. Er wird nicht überschrieben, neue Antworten werden deshalb vorerst nicht gespeichert.",
+  "speicher.neuereVersion": "Der gespeicherte Lernstand stammt aus einer neueren Version der App. Bitte die Seite neu laden; bis dahin wird nichts gespeichert.",
+  "speicher.schreibfehler": "Der Lernstand konnte zuletzt nicht gespeichert werden. Die App versucht es bei der nächsten Antwort erneut.",
+  "speicher.abgebrochen": "Der Lernstand konnte zuletzt nicht gespeichert werden. Die App versucht es bei der nächsten Antwort erneut.",
+  "speicher.nichtDauerhaft": "Der Browser hat keinen dauerhaften Speicher zugesagt und könnte den Lernstand bei Platzmangel löschen. Als installierte App ist er besser geschützt.",
+  "speicher.verworfen": "{anzahl} beschädigte Einträge im gespeicherten Lernstand wurden übersprungen."
 }

@@ -62,7 +62,6 @@
   "lernen.neu": "New questions",
   "lernen.faecher": "Questions per box (1 = just learned, 5 = solid)",
   "lernen.fachLabel": "Box {fach}: {anzahl} questions",
-  "lernen.nichtGespeichert": "Your progress is not saved yet and will be lost when the page is reloaded.",
   "lernen.rundeStarten": "Start round",
   "lernen.vorziehen": "Review ahead of schedule",
   "runde.titel.normal": "Round",
@@ -81,5 +80,13 @@
   "auswertung.keineAntwort": "No question answered",
   "auswertung.ohneFehler": "No mistakes – well done!",
   "auswertung.fehlerWiederholen": "Repeat mistakes now ({anzahl})",
-  "auswertung.zurStartseite": "Back to start"
+  "auswertung.zurStartseite": "Back to start",
+  "speicher.nichtVerfuegbar": "This browser cannot save your progress (for example in a private window). It will be lost when you close the page.",
+  "speicher.unlesbar": "The saved progress cannot be read. It will not be overwritten, so new answers are not saved for now.",
+  "speicher.lesefehler": "The saved progress could not be read. It will not be overwritten, so new answers are not saved for now.",
+  "speicher.neuereVersion": "The saved progress comes from a newer version of the app. Please reload the page; nothing is saved until then.",
+  "speicher.schreibfehler": "Your progress could not be saved last time. The app will try again with your next answer.",
+  "speicher.abgebrochen": "Your progress could not be saved last time. The app will try again with your next answer.",
+  "speicher.nichtDauerhaft": "The browser has not granted persistent storage and might delete your progress when space runs low. Installed as an app, it is better protected.",
+  "speicher.verworfen": "{anzahl} damaged entries in the saved progress were skipped."
 }
