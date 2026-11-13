@@ -7,10 +7,13 @@
     "version": "1",
     "stand": "2026-11-12",
     "herkunft": "eigen",
-    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01)."
+    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01), und enthält je ein Beispiel für Multiple Choice mit gemischten und mit fester Reihenfolge sowie für Freitext (F-08, F-29)."
   },
   "themen": [
-    { "id": "beispiel-allgemein", "titel": "Allgemein" }
+    {
+      "id": "beispiel-allgemein",
+      "titel": "Allgemein"
+    }
   ],
   "fragen": [
     {
@@ -18,7 +21,11 @@
       "thema": "beispiel-allgemein",
       "typ": "mc",
       "frage": "Wie viele Tage hat eine Woche?",
-      "optionen": ["5", "7", "10"],
+      "optionen": [
+        "5",
+        "7",
+        "10"
+      ],
       "richtig": 1,
       "erklaerung": "Eine Woche hat sieben Tage.",
       "quelle": "eigen"
@@ -28,9 +35,46 @@
       "thema": "beispiel-allgemein",
       "typ": "mc",
       "frage": "Welche Farbe entsteht aus Blau und Gelb?",
-      "optionen": ["Grün", "Rot", "Violett"],
+      "optionen": [
+        "Grün",
+        "Rot",
+        "Violett"
+      ],
       "richtig": 0,
       "erklaerung": "Blau und Gelb ergeben gemischt Grün.",
+      "quelle": "eigen"
+    },
+    {
+      "id": "beispiel-003",
+      "thema": "beispiel-allgemein",
+      "typ": "mc",
+      "frage": "Welche dieser Zahlen sind gerade?",
+      "optionen": [
+        "2",
+        "4",
+        "8",
+        "Alle oben genannten"
+      ],
+      "richtig": 3,
+      "mischen": false,
+      "herkunft": "eigen",
+      "erklaerung": "2, 4 und 8 sind durch 2 teilbar. Die Reihenfolge bleibt fest, weil sich die letzte Option auf die anderen bezieht.",
+      "quelle": "eigen"
+    },
+    {
+      "id": "beispiel-004",
+      "thema": "beispiel-allgemein",
+      "typ": "freitext",
+      "frage": "Was braucht eine Pflanze zum Wachsen?",
+      "musterantwort": "Licht, Wasser und Nährstoffe.",
+      "kernpunkte": [
+        "Licht",
+        "Wasser",
+        "Nährstoffe"
+      ],
+      "kernpunkteStatus": "geprueft",
+      "herkunft": "eigen",
+      "erklaerung": "",
       "quelle": "eigen"
     }
   ]

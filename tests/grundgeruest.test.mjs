@@ -38,7 +38,7 @@ test('alle Dateien im Service-Worker-Cache existieren', async () => {
 
 test('alle JS-Dateien der App stehen im Service-Worker-Cache', async () => {
   const sw = await lies('sw.js');
-  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m8-inhaltsformat.js',
+  for (const datei of ['src/app.js', 'src/engine/m1-kern.js', 'src/engine/m2-lernlogik.js', 'src/engine/m3-fragetypen.js', 'src/engine/m8-inhaltsformat.js',
     'src/ui/dom.js', 'src/ui/i18n.js', 'src/ui/start.js', 'src/ui/runde.js', 'content/sks/sks.json']) {
     assert.ok(sw.includes(`'${datei}'`), `${datei} fehlt in sw.js`);
   }
