@@ -59,5 +59,5 @@ test('das mitgelieferte Beispielmodul ist gültig', async () => {
   const u = modulUebersicht(leseModul(text));
   assert.equal(u.id, 'beispiel');
   assert.equal(u.themen, 1);
-  assert.equal(u.fragen, 2);
+  assert.equal(u.fragen, 4);
 });

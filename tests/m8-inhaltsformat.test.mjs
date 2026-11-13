@@ -94,6 +94,12 @@ test('MC-Fragen: Optionen und richtige Antwort', () => {
   assert.deepEqual(codes(pruefeModul(modul([mc(1, { optionen: 'a,b' })]))), ['inhalt.keineListe', 'inhalt.richtigAusserhalb']);
 });
 
+test('MC-Fragen: optional "mischen" (true/false) und "herkunft"', () => {
+  assert.deepEqual(pruefeModul(modul([mc(1, { mischen: false, herkunft: 'amtlich' }), mc(2, { mischen: true })])), []);
+  assert.deepEqual(codes(pruefeModul(modul([mc(1, { mischen: 'nein' })]))), ['inhalt.keinWahrheitswert']);
+  assert.deepEqual(codes(pruefeModul(modul([mc(1, { herkunft: 'internet' })]))), ['inhalt.wertNichtErlaubt']);
+});
+
 test('IDs: Format, eindeutig, mit Präfix der Modul-ID; Thema muss existieren', () => {
   assert.deepEqual(codes(pruefeModul(modul([mc(1), mc(1)]))), ['inhalt.idDoppelt']);
   assert.deepEqual(codes(pruefeModul(modul([mc(1, { id: 'anders-1' })]))), ['inhalt.idPraefix']);
