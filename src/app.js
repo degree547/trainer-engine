@@ -60,6 +60,7 @@ function starteRunde(modus) {
   zeigeRunde(hauptbereich, {
     fragen: bilde(modul, zustand.lernstand, heute()),
     modus,
+    modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
     onBewertung: (frage, richtig, uebung) => {
       zustand.lernstand = bewerte(zustand.lernstand, frage.id, richtig, heute(), { uebung });

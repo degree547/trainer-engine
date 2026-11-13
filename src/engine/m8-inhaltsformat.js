@@ -12,7 +12,9 @@
 //
 // Jede Frage (F-25): "id" (beginnt mit <meta.id>-), "thema", "typ", "frage",
 //   "erklaerung" (Text, darf leer sein), "quelle", optional "hinweis".
-//   typ "mc":       "optionen" (mindestens 2 Texte), "richtig" (Nummer der Option ab 0)
+//   typ "mc":       "optionen" (mindestens 2 Texte), "richtig" (Nummer der Option ab 0),
+//                   optional "mischen" (true | false, Standard true: Reihenfolge wird gemischt;
+//                   false z. B. bei „Alle oben genannten“), optional "herkunft" (amtlich | buch | eigen)
 //   typ "freitext": "musterantwort", "kernpunkte" (Liste von Texten),
 //                   "kernpunkteStatus" (ungeprueft | geprueft),
 //                   "herkunft" (amtlich | buch | eigen)              (F-32)
@@ -327,6 +329,13 @@ function pruefeFrage(frage, pfad, ort, k) {
       || frage.richtig < 0 || frage.richtig >= optionen.length) {
       melde('inhalt.richtigAusserhalb', `${pfad}.richtig`, ort,
         { max: Array.isArray(optionen) ? Math.max(optionen.length - 1, 0) : 0 });
+    }
+    if (frage.mischen !== undefined && typeof frage.mischen !== 'boolean') {
+      melde('inhalt.keinWahrheitswert', `${pfad}.mischen`, ort, { feld: 'mischen' });
+    }
+    if (frage.herkunft !== undefined && !HERKUENFTE.includes(frage.herkunft)) {
+      melde('inhalt.wertNichtErlaubt', `${pfad}.herkunft`, ort,
+        { feld: 'herkunft', wert: String(frage.herkunft), erlaubt: HERKUENFTE.join(', ') });
     }
     return;
   }
