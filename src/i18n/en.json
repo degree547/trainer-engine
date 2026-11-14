@@ -161,5 +161,10 @@
   "statistik.zaehlungSeit": "Counting started with the statistics update. Earlier free-text answers are included, earlier multiple-choice answers are not.",
   "statistik.falschVon.eins": "{anzahl} of {versuche} wrong",
   "statistik.falschVon.mehr": "{anzahl} of {versuche} wrong",
-  "statistik.fach": "Box {fach}"
+  "statistik.fach": "Box {fach}",
+  "lernen.thema": "Topic",
+  "lernen.alleThemen": "All topics",
+  "lernen.anderswoFaellig.eins": "{anzahl} question is still due in other topics.",
+  "lernen.anderswoFaellig.mehr": "{anzahl} questions are still due in other topics.",
+  "statistik.themaLernen": "Study this topic"
 }

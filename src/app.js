@@ -32,7 +32,33 @@ const zustand = {
   modul: null, fehler: null, dateiname: '', lernstand: neuerLernstand(),
   speicher: null, speicherFehler: null, dauerhaft: 'unbekannt', verworfen: 0,
   profil: neuesProfil(), profilSpeichern: true, profilVerworfen: 0, profilFehler: null, offeneProfilAenderungen: 0,
+  thema: null, // gewähltes Thema für Runden (F-06), null = alle Themen
 };
+
+// Das gewählte Thema wird je Modul im Browser gemerkt (localStorage). Es ist nur eine
+// Einstellung der Oberfläche, kein Lernstand; geht sie verloren, gilt wieder „Alle Themen“.
+const THEMA_SCHLUESSEL = 'trainer-engine.thema.';
+
+/** Gemerktes Thema zum Modul; null, wenn keines gemerkt ist oder es das Thema nicht mehr gibt. */
+function ladeThema(modul) {
+  try {
+    const id = localStorage.getItem(THEMA_SCHLUESSEL + modul.meta.id);
+    return modul.themen.some((thema) => thema.id === id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+function waehleThema(id) {
+  const { modul } = zustand;
+  zustand.thema = id;
+  try {
+    if (id == null) localStorage.removeItem(THEMA_SCHLUESSEL + modul.meta.id);
+    else localStorage.setItem(THEMA_SCHLUESSEL + modul.meta.id, id);
+  } catch {
+    // Ohne localStorage (z. B. privates Fenster) gilt die Wahl nur bis zum Schließen.
+  }
+}
 
 function zeigeStatus() {
   const offlineBereit = navigator.serviceWorker?.controller != null;
@@ -93,10 +119,13 @@ function speichereFreitext(frage, text, gewusst, modus) {
 }
 
 function zurStartseite() {
-  const { modul, fehler, dateiname, lernstand } = zustand;
+  const { modul, fehler, dateiname, lernstand, thema } = zustand;
+  const lernen = modul ? lernUebersicht(modul, lernstand, heute(), { thema }) : null;
+  const alle = modul && thema ? lernUebersicht(modul, lernstand, heute()) : lernen;
   zeigeStart(hauptbereich, {
-    modul, fehler, dateiname,
-    lernen: modul ? lernUebersicht(modul, lernstand, heute()) : null,
+    modul, fehler, dateiname, lernen,
+    thema, anderswoFaellig: lernen ? alle.faellig - lernen.faellig : 0,
+    onThema: (id) => { waehleThema(id); zurStartseite(); },
     fortschritt: fortschritt(zustand.profil, heute()),
     hinweis: startHinweis(zustand.profil, heute()),
     onTagesziel: (wert) => {
@@ -123,6 +152,7 @@ function zurStatistik() {
     fortschritt: fortschrittJeThema(modul, lernstand),
     schwaechen: schwaechenliste(modul, lernstand),
     onZurueck: zurStartseite,
+    onThema: (id) => { waehleThema(id); zurStartseite(); },
   });
 }
 
@@ -130,7 +160,7 @@ function starteRunde(modus) {
   const { modul } = zustand;
   const bilde = modus === 'vorziehen' ? bildeVorgezogeneRunde : bildeRunde;
   zeigeRunde(hauptbereich, {
-    fragen: bilde(modul, zustand.lernstand, heute()),
+    fragen: bilde(modul, zustand.lernstand, heute(), { thema: zustand.thema }),
     modus,
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
@@ -147,7 +177,7 @@ function starteRunde(modus) {
       const aufstieg = aufstiegVon(Math.max(f.xp - runde.xp - bonus, 0), f.xp, modul.raenge);
       return { zaehlt, bonus, fortschritt: f, hinweis: startHinweis(zustand.profil, heute()), aufstieg };
     },
-    holeFaecher: () => lernUebersicht(modul, zustand.lernstand, heute()).faecher,
+    holeFaecher: () => lernUebersicht(modul, zustand.lernstand, heute(), { thema: zustand.thema }).faecher,
     onFertig: zurStartseite,
   });
 }
@@ -168,7 +198,7 @@ async function speichere() {
 
 /** Lädt den gespeicherten Lernstand zum gerade geladenen Modul. */
 async function ladeLernstand() {
-  Object.assign(zustand, { lernstand: neuerLernstand(), verworfen: 0 });
+  Object.assign(zustand, { lernstand: neuerLernstand(), verworfen: 0, thema: zustand.modul ? ladeThema(zustand.modul) : null });
   const { speicher, modul } = zustand;
   if (!speicher || !modul) return;
   try {

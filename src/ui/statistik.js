@@ -14,6 +14,7 @@ const prozent = (anteil) => Math.round(anteil * 100);
  *   fortschritt: {themen: object[], gesamt: object},  // aus fortschrittJeThema (M5)
  *   schwaechen: object[],                              // aus schwaechenliste (M5)
  *   onZurueck: () => void,
+ *   onThema?: (id: string) => void,                   // Thema wählen und zur Startseite (F-06)
  * }} statistik
  */
 export function zeigeStatistik(ziel, statistik) {
@@ -25,16 +26,16 @@ export function zeigeStatistik(ziel, statistik) {
     el('button', { type: 'button', class: 'knopf', onclick: statistik.onZurueck }, t('auswertung.zurStartseite')));
 
   ziel.replaceChildren(
-    el('div', { class: 'inhalt' }, kopf, themenkarte(statistik.fortschritt), schwaechenkarte(statistik)),
+    el('div', { class: 'inhalt' }, kopf, themenkarte(statistik.fortschritt, statistik.onThema), schwaechenkarte(statistik)),
     aktionen,
   );
   window.scrollTo(0, 0);
 }
 
 /** Fortschritt je Thema mit Balken: sicher (Fach 4–5) und in Arbeit (Fach 1–3). */
-function themenkarte({ themen, gesamt }) {
+function themenkarte({ themen, gesamt }, onThema) {
   const liste = el('ul', { class: 'themenfortschritt', role: 'list' });
-  for (const thema of themen) liste.append(themenzeile(thema.titel, thema));
+  for (const thema of themen) liste.append(themenzeile(thema.titel, thema, onThema ? () => onThema(thema.id) : null));
   return el('section', { class: 'karte' },
     el('p', { class: 'etikett' }, t('statistik.fortschritt')),
     el('h2', {}, t('statistik.gesamtSicher', { prozent: prozent(gesamt.anteil) })),
@@ -43,7 +44,7 @@ function themenkarte({ themen, gesamt }) {
   );
 }
 
-function themenzeile(titel, z) {
+function themenzeile(titel, z, onLernen) {
   const anteilLernend = z.gesamt > 0 ? z.lernend / z.gesamt : 0;
   return el('li', {},
     el('p', { class: 'themenzeile' },
@@ -58,6 +59,9 @@ function themenzeile(titel, z) {
     el('span', { class: 'lernend', style: `width: ${anteilLernend * 100}%` })),
     el('p', { class: 'leise themenzahlen' },
       t('statistik.zahlen', { sicher: z.sicher, lernend: z.lernend, neu: z.neu, gesamt: z.gesamt })),
+    onLernen && z.gesamt > 0
+      ? el('button', { type: 'button', class: 'textknopf', onclick: onLernen }, t('statistik.themaLernen'))
+      : null,
   );
 }
 

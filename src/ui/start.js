@@ -1,7 +1,7 @@
 // Startbildschirm: Lernstand mit „Runde starten“, das geladene Inhaltsmodul
 // und das Laden einer Moduldatei.
 
-import { t } from './i18n.js';
+import { t, tn } from './i18n.js';
 import { el } from './dom.js';
 import { faecherleiste } from './runde.js';
 import { hinweistext, levelbalken, fortschrittszahlen, tageszielwahl } from './fortschritt.js';
@@ -42,7 +42,9 @@ export function fehlertext(fehler) {
  *          fortschritt?: object, hinweis?: {code: string, werte: object}, onTagesziel?: (wert: number) => void,
  *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
- *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void}} zustand
+ *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void,
+ *          thema?: string|null, onThema?: (id: string|null) => void, anderswoFaellig?: number}} zustand
+ *   thema: gewähltes Thema (F-06), null = alle; anderswoFaellig: fällige Fragen in den übrigen Themen
  */
 export function zeigeStart(ziel, zustand) {
   const inhalt = [];
@@ -120,12 +122,28 @@ function lernkarte(lernen, zustand) {
   return el('section', { class: 'karte' },
     el('p', { class: 'etikett' }, t('lernen.titel')),
     erinnerung,
+    zustand.onThema ? themenwahl(zustand.modul.themen, zustand.thema ?? null, zustand.onThema) : null,
     el('h2', {}, lernen.faellig + lernen.neu > 0 ? t('lernen.bereit') : t('lernen.allesErledigt')),
     liste,
     faecherleiste(lernen.faecher),
+    zustand.thema && zustand.anderswoFaellig > 0
+      ? el('p', { class: 'hinweis' }, tn('lernen.anderswoFaellig', zustand.anderswoFaellig))
+      : null,
     knoepfe.childElementCount > 0 ? knoepfe : null,
     ...speicherhinweise(zustand.speicherung ?? {}),
   );
+}
+
+/** Auswahl des Themas für die nächste Runde (F-06): alle Themen oder eines. */
+function themenwahl(themen, gewaehlt, onThema) {
+  const auswahl = el('select', {
+    id: 'themenwahl', class: 'auswahl',
+    onchange: (e) => onThema(e.target.value === '' ? null : e.target.value),
+  }, el('option', { value: '', selected: gewaehlt == null }, t('lernen.alleThemen')));
+  for (const thema of themen) {
+    auswahl.append(el('option', { value: thema.id, selected: thema.id === gewaehlt }, thema.titel));
+  }
+  return el('div', { class: 'themenwahl' }, el('label', { for: 'themenwahl' }, t('lernen.thema')), auswahl);
 }
 
 /** XP, Level mit Rang, Streak und Tagesziel (F-13, F-14, F-36). */

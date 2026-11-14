@@ -161,5 +161,10 @@
   "statistik.zaehlungSeit": "Gezählt wird seit dem Update mit der Statistik. Frühere Freitext-Antworten sind eingerechnet, frühere Multiple-Choice-Antworten nicht.",
   "statistik.falschVon.eins": "{anzahl} von {versuche} falsch",
   "statistik.falschVon.mehr": "{anzahl} von {versuche} falsch",
-  "statistik.fach": "Fach {fach}"
+  "statistik.fach": "Fach {fach}",
+  "lernen.thema": "Thema",
+  "lernen.alleThemen": "Alle Themen",
+  "lernen.anderswoFaellig.eins": "In anderen Themen ist noch {anzahl} Frage fällig.",
+  "lernen.anderswoFaellig.mehr": "In anderen Themen sind noch {anzahl} Fragen fällig.",
+  "statistik.themaLernen": "Dieses Thema lernen"
 }

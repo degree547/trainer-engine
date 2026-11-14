@@ -1,4 +1,4 @@
-// M2 Lernlogik: Leitner-Fächer und Rundenbildung (F-03, F-05).
+// M2 Lernlogik: Leitner-Fächer und Rundenbildung (F-03, F-05, F-06).
 // Das Modul kennt keine Prüfungsinhalte. Es arbeitet nur mit Frage-IDs,
 // Themen-IDs und der Reihenfolge, die das Inhaltsmodul vorgibt.
 //
@@ -20,6 +20,9 @@
 //   richtig ändert nichts, falsch setzt zurück in Fach 1 wie sonst auch.
 // - Eine Runde: zuerst fällige Fragen (am längsten überfällig zuerst), dann neue
 //   Fragen Thema für Thema in der Reihenfolge des Moduls (F-05).
+// - Optional lässt sich eine Runde auf ein Thema beschränken (F-06, Option "thema" mit der
+//   Themen-ID); dann gelten dieselben Regeln nur für die Fragen dieses Themas. Ohne Thema
+//   (oder mit null) gilt das ganze Modul.
 
 export const LERNSTAND_VERSION = 2;
 export const FAECHER = 5;
@@ -82,11 +85,15 @@ export function istFaellig(karte, heute) {
   return karte != null && karte.faellig <= heute;
 }
 
-/** Reihenfolge der Fragen im Modul: Themen wie in "themen", darin wie in "fragen". */
-function fragenNachThemen(modul) {
-  const rang = new Map(modul.themen.map((thema, i) => [thema.id, i]));
+/**
+ * Reihenfolge der Fragen im Modul: Themen wie in "themen", darin wie in "fragen".
+ * Mit `thema` nur die Fragen dieses Themas (F-06).
+ */
+function fragenNachThemen(modul, thema = null) {
+  const rang = new Map(modul.themen.map((t, i) => [t.id, i]));
   return modul.fragen
     .map((frage, nr) => ({ frage, nr }))
+    .filter(({ frage }) => thema == null || frage.thema === thema)
     .sort((a, b) => (rang.get(a.frage.thema) - rang.get(b.frage.thema)) || (a.nr - b.nr))
     .map(({ frage, nr }) => ({ frage, nr }));
 }
@@ -101,12 +108,13 @@ function nachTermin(eintraege, karten) {
 }
 
 /**
- * Bildet eine Runde: zuerst fällige, dann neue Fragen (F-05).
+ * Bildet eine Runde: zuerst fällige, dann neue Fragen (F-05), optional nur aus einem Thema (F-06).
+ * @param {{anzahl?: number, thema?: string|null}} [optionen]
  * @returns {object[]} höchstens `anzahl` Fragen aus dem Modul
  */
-export function bildeRunde(modul, lernstand, heute, { anzahl = RUNDENGROESSE } = {}) {
+export function bildeRunde(modul, lernstand, heute, { anzahl = RUNDENGROESSE, thema = null } = {}) {
   const karten = lernstand.karten;
-  const alle = fragenNachThemen(modul);
+  const alle = fragenNachThemen(modul, thema);
   const faellig = nachTermin(alle.filter((e) => istFaellig(karten[e.frage.id], heute)), karten);
   const neu = alle.filter((e) => !karten[e.frage.id]);
   return [...faellig, ...neu].slice(0, anzahl).map((e) => e.frage);
@@ -116,20 +124,22 @@ export function bildeRunde(modul, lernstand, heute, { anzahl = RUNDENGROESSE } =
  * Bildet eine vorgezogene Wiederholung aus gelernten, noch nicht fälligen Fragen:
  * nächster Termin zuerst, bei gleichem Termin die niedrigen Fächer.
  */
-export function bildeVorgezogeneRunde(modul, lernstand, heute, { anzahl = RUNDENGROESSE } = {}) {
+export function bildeVorgezogeneRunde(modul, lernstand, heute, { anzahl = RUNDENGROESSE, thema = null } = {}) {
   const karten = lernstand.karten;
-  const spaeter = fragenNachThemen(modul).filter((e) => karten[e.frage.id] && !istFaellig(karten[e.frage.id], heute));
+  const spaeter = fragenNachThemen(modul, thema).filter((e) => karten[e.frage.id] && !istFaellig(karten[e.frage.id], heute));
   return nachTermin(spaeter, karten).slice(0, anzahl).map((e) => e.frage);
 }
 
 /**
- * Kennzahlen für die Startseite.
+ * Kennzahlen für die Startseite, optional nur für ein Thema (F-06).
+ * @param {{thema?: string|null}} [optionen]
  * @returns {{faellig: number, neu: number, spaeter: number, faecher: number[]}}
  *   faecher[0] ist die Anzahl in Fach 1, faecher[4] in Fach 5
  */
-export function lernUebersicht(modul, lernstand, heute) {
+export function lernUebersicht(modul, lernstand, heute, { thema = null } = {}) {
   const ergebnis = { faellig: 0, neu: 0, spaeter: 0, faecher: Array(FAECHER).fill(0) };
   for (const frage of modul.fragen) {
+    if (thema != null && frage.thema !== thema) continue;
     const karte = lernstand.karten[frage.id];
     if (!karte) { ergebnis.neu += 1; continue; }
     ergebnis.faecher[karte.fach - 1] += 1;

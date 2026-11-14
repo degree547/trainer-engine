@@ -278,3 +278,9 @@ main {
 .schwaecheantwort .fragetext { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; }
 .schwaecheantwort .etikett { margin-top: 0.5rem; }
 .leer { margin: 0.5rem 0 0; }
+
+/* Themenauswahl (AP7A, F-06) */
+.themenwahl { display: flex; flex-direction: column; gap: 0.25rem; margin: 0 0 0.75rem; }
+.themenwahl label { color: var(--text-leise); font-size: 0.875rem; }
+.themenwahl .auswahl { width: 100%; }
+.themenfortschritt .textknopf { padding: 0.25rem 0; min-height: 2.75rem; }

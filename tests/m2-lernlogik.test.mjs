@@ -169,3 +169,19 @@ test('M2 kennt keine Prüfungsinhalte', async () => {
   const quelltext = await readFile(new URL('../src/engine/m2-lernlogik.js', import.meta.url), 'utf8');
   assert.ok(!/sks|navigation|seemannschaft/i.test(quelltext));
 });
+
+test('F-06: Runde auf ein Thema beschränkt, gleiche Regeln (fällige zuerst, dann neue)', () => {
+  const ls = { version: 2, karten: {
+    'x-a-2': { fach: 2, faellig: '2026-11-20', zuletzt: '2026-11-18' },
+    'x-b-1': { fach: 2, faellig: '2026-11-21', zuletzt: '2026-11-19' },
+    'x-b-2': { fach: 3, faellig: '2026-11-30', zuletzt: '2026-11-19' },
+  } };
+  assert.deepEqual(ids(bildeRunde(modul, ls, HEUTE, { thema: 'x-a' })), ['x-a-2', 'x-a-1']);
+  assert.deepEqual(ids(bildeRunde(modul, ls, HEUTE, { thema: 'x-b' })), ['x-b-1']);
+  assert.deepEqual(ids(bildeRunde(modul, ls, HEUTE, { thema: null })), ['x-a-2', 'x-b-1', 'x-a-1']);
+  assert.deepEqual(ids(bildeVorgezogeneRunde(modul, ls, HEUTE, { thema: 'x-b' })), ['x-b-2']);
+  assert.deepEqual(bildeVorgezogeneRunde(modul, ls, HEUTE, { thema: 'x-a' }), []);
+  assert.deepEqual(bildeRunde(modul, ls, HEUTE, { thema: 'gibt-es-nicht' }), []);
+  assert.deepEqual(lernUebersicht(modul, ls, HEUTE, { thema: 'x-b' }), { faellig: 1, neu: 0, spaeter: 1, faecher: [0, 1, 1, 0, 0] });
+  assert.deepEqual(lernUebersicht(modul, ls, HEUTE, { thema: 'x-a' }), { faellig: 1, neu: 1, spaeter: 0, faecher: [0, 1, 0, 0, 0] });
+});
