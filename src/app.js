@@ -11,9 +11,10 @@ import {
 } from './engine/m4-gamification.js';
 import {
   oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, freitextEintrag,
+  pruefeSicherung, dateinameSicherung,
 } from './engine/m7-speicherung.js';
 import { fortschrittJeThema, schwaechenliste } from './engine/m5-statistik.js';
-import { ladeTexte, t } from './ui/i18n.js';
+import { ladeTexte, t, bevorzugteSprache, merkeSprache, sprache } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
 import { zeigeRunde } from './ui/runde.js';
 import { zeigeStatistik } from './ui/statistik.js';
@@ -33,7 +34,19 @@ const zustand = {
   speicher: null, speicherFehler: null, dauerhaft: 'unbekannt', verworfen: 0,
   profil: neuesProfil(), profilSpeichern: true, profilVerworfen: 0, profilFehler: null, offeneProfilAenderungen: 0,
   thema: null, // gewähltes Thema für Runden (F-06), null = alle Themen
+  sicherungMeldung: null, // Rückmeldung nach Export oder Import (F-22), wird einmal angezeigt
 };
+
+// Datum der letzten exportierten Sicherung, nur als Hinweis für diesen Browser (localStorage).
+const SICHERUNG_SCHLUESSEL = 'trainer-engine.letzteSicherung';
+
+function letzteSicherung() {
+  try {
+    return localStorage.getItem(SICHERUNG_SCHLUESSEL);
+  } catch {
+    return null;
+  }
+}
 
 // Das gewählte Thema wird je Modul im Browser gemerkt (localStorage). Es ist nur eine
 // Einstellung der Oberfläche, kein Lernstand; geht sie verloren, gilt wieder „Alle Themen“.
@@ -140,8 +153,80 @@ function zurStartseite() {
     onRunde: () => starteRunde('normal'),
     onVorziehen: () => starteRunde('vorziehen'),
     onStatistik: zurStatistik,
+    einstellungen: {
+      sprache: sprache(),
+      onSprache: wechsleSprache,
+      sicherung: { verfuegbar: zustand.speicher != null, letzte: letzteSicherung(), meldung: zustand.sicherungMeldung },
+      onExport: exportiereSicherung,
+      onImport: importiereSicherung,
+    },
   });
-  window.scrollTo(0, 0);
+  if (zustand.sicherungMeldung) {
+    // Nach Export oder Import die Rückmeldung zeigen statt nach oben zu springen.
+    zustand.sicherungMeldung = null;
+    hauptbereich.querySelector('.meldung')?.scrollIntoView({ block: 'center' });
+  } else {
+    window.scrollTo(0, 0);
+  }
+}
+
+/** Schaltet die Oberfläche um und merkt die Wahl in diesem Browser. */
+async function wechsleSprache(neu) {
+  merkeSprache(neu);
+  await ladeTexte(neu);
+  zeigeTitel();
+  zeigeStatus();
+  zurStartseite();
+  document.getElementById('sprachwahl')?.focus();
+}
+
+/** Speichert die Sicherungsdatei auf dem Gerät (F-22). */
+async function exportiereSicherung() {
+  try {
+    const inhalt = await zustand.speicher.ladeSicherung();
+    const name = dateinameSicherung(heute());
+    const url = URL.createObjectURL(new Blob([JSON.stringify(inhalt, null, 1)], { type: 'application/json' }));
+    const link = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    try { localStorage.setItem(SICHERUNG_SCHLUESSEL, heute()); } catch { /* nur ein Hinweis */ }
+    zustand.sicherungMeldung = { art: 'ok', text: t('sicherung.exportiert', { name }) };
+  } catch (fehler) {
+    zustand.sicherungMeldung = { art: 'fehler', text: t(speicherCode(fehler, 'sicherung.exportFehler')) };
+  }
+  zurStartseite();
+}
+
+/** Liest eine Sicherungsdatei, prüft sie vollständig und führt sie mit dem Gespeicherten zusammen. */
+async function importiereSicherung(datei) {
+  let geprueft;
+  try {
+    let daten;
+    try {
+      daten = JSON.parse(await datei.text());
+    } catch {
+      throw new SpeicherFehler('sicherung.keinJson');
+    }
+    geprueft = pruefeSicherung(daten);
+  } catch (fehler) {
+    zustand.sicherungMeldung = { art: 'fehler', text: t(speicherCode(fehler, 'sicherung.unlesbar')) };
+    zurStartseite();
+    return;
+  }
+  try {
+    const ergebnis = await zustand.speicher.importiere(geprueft.sicherung);
+    // Gespeicherten Stand neu laden, damit Startseite, Statistik und Profil ihn zeigen.
+    await ladeProfil();
+    await ladeLernstand();
+    const zeilen = [t('sicherung.importiert', ergebnis)];
+    if (geprueft.verworfen > 0) zeilen.push(t('sicherung.verworfen', { anzahl: geprueft.verworfen }));
+    zustand.sicherungMeldung = { art: 'ok', text: zeilen.join(' ') };
+  } catch (fehler) {
+    zustand.sicherungMeldung = { art: 'fehler', text: t(speicherCode(fehler, 'sicherung.importFehler')) };
+  }
+  zurStartseite();
 }
 
 /** Fortschritt je Thema und Schwächenliste (M5). */
@@ -244,10 +329,14 @@ async function ladeDatei(datei) {
   zurStartseite();
 }
 
-async function start() {
-  await ladeTexte('de');
+function zeigeTitel() {
   document.title = t('app.titel');
   document.getElementById('titel').textContent = t('app.titel');
+}
+
+async function start() {
+  await ladeTexte(bevorzugteSprache());
+  zeigeTitel();
 
   window.addEventListener('online', zeigeStatus);
   window.addEventListener('offline', zeigeStatus);

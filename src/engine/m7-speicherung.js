@@ -37,7 +37,7 @@
 // Geräte dieselbe Frage, fehlt dem älteren Eintrag deshalb eine Antwort in der Zählung.
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
-import { pruefeProfil, ProfilFehler } from './m4-gamification.js';
+import { pruefeProfil, ProfilFehler, fuehreProfileZusammen } from './m4-gamification.js';
 
 export const DB_NAME = 'trainer-engine';
 export const DB_VERSION = 3;
@@ -169,6 +169,113 @@ export function fuehreAntwortenZusammen(a, b) {
   }
   const antworten = [...nachId.values()].sort((x, y) => x.zeit - y.zeit || (x.id < y.id ? -1 : 1));
   return { antworten, verworfen };
+}
+
+// --- Sicherung: Export und Import (F-22, F-34) -----------------------------
+//
+// Eine Sicherungsdatei enthält alles, was die App im Browser speichert:
+//   { app: "trainer-engine", art: "sicherung", version: 1, erstellt: "<ISO-Zeitpunkt>",
+//     profil: <Profil aus M4>, lernstand: { "<modul-id>": <Lernstand> }, antworten: [ ... ] }
+// Der Import ersetzt nie, er führt zusammen: je Frage gewinnt die jüngere Karte, XP zählen je
+// Gerät und Tag nur einmal, Freitext-Antworten kommen ohne Doppelte dazu. So kann dieselbe
+// Datei gefahrlos mehrmals eingelesen werden, und Lernstand von Gerät 2 geht nicht verloren,
+// wenn eine ältere Sicherung von Gerät 1 dazukommt. Karten zu Fragen, die ein Modul nicht mehr
+// enthält, bleiben erhalten (F-23); die Lernlogik zählt nur Fragen, die es im Modul gibt.
+
+export const SICHERUNG_VERSION = 1;
+const SICHERUNG_APP = 'trainer-engine';
+const SICHERUNG_ART = 'sicherung';
+
+/** Dateiname einer Sicherung, z. B. „trainer-engine-sicherung-2026-11-14.json“. */
+export function dateinameSicherung(datum) {
+  return `trainer-engine-sicherung-${datum}.json`;
+}
+
+/**
+ * Baut den Inhalt einer Sicherungsdatei.
+ * @param {{profil: object|null, lernstaende: Object<string, object>, antworten: object[]}} daten
+ * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
+ */
+export function baueSicherung({ profil, lernstaende, antworten }, jetzt = Date.now()) {
+  return {
+    app: SICHERUNG_APP,
+    art: SICHERUNG_ART,
+    version: SICHERUNG_VERSION,
+    erstellt: new Date(jetzt).toISOString(),
+    profil: profil ?? null,
+    lernstand: { ...lernstaende },
+    antworten: [...antworten],
+  };
+}
+
+/** Wandelt Fehler aus M2/M4 beim Prüfen einer Sicherung in Sicherungs-Codes um. */
+function sicherungsFehler(fehler) {
+  const code = fehler?.code === 'speicher.neuereVersion' ? 'sicherung.neuereVersion' : 'sicherung.unlesbar';
+  return new SpeicherFehler(code, fehler?.message);
+}
+
+/**
+ * Prüft den Inhalt einer Sicherungsdatei, bevor etwas gespeichert wird. Ältere Lernstände
+ * werden umgestellt, beschädigte Einträge übersprungen und gezählt.
+ * @returns {{sicherung: {profil: object|null, lernstaende: Object<string, object>, antworten: object[]},
+ *            verworfen: number}}
+ * @throws {SpeicherFehler} 'sicherung.istModul', 'sicherung.keineSicherung', 'sicherung.unlesbar'
+ *   oder 'sicherung.neuereVersion'; dann darf nichts übernommen werden
+ */
+export function pruefeSicherung(daten) {
+  if (daten == null || typeof daten !== 'object' || Array.isArray(daten)) {
+    throw new SpeicherFehler('sicherung.keineSicherung');
+  }
+  if (daten.app !== SICHERUNG_APP || daten.art !== SICHERUNG_ART) {
+    const istModul = 'format' in daten && 'fragen' in daten;
+    throw new SpeicherFehler(istModul ? 'sicherung.istModul' : 'sicherung.keineSicherung');
+  }
+  if (!Number.isInteger(daten.version) || daten.version < 1) throw new SpeicherFehler('sicherung.unlesbar');
+  if (daten.version > SICHERUNG_VERSION) throw new SpeicherFehler('sicherung.neuereVersion');
+
+  const lernstandRoh = daten.lernstand ?? {};
+  const antwortenRoh = daten.antworten ?? [];
+  if (typeof lernstandRoh !== 'object' || Array.isArray(lernstandRoh) || !Array.isArray(antwortenRoh)) {
+    throw new SpeicherFehler('sicherung.unlesbar');
+  }
+
+  let verworfen = 0;
+  const { antworten, verworfen: antwortenVerworfen } = fuehreAntwortenZusammen(antwortenRoh, []);
+  verworfen += antwortenVerworfen;
+
+  let profil = null;
+  if (daten.profil != null) {
+    try {
+      const geprueft = pruefeProfil(daten.profil);
+      profil = geprueft.profil;
+      verworfen += geprueft.verworfen;
+    } catch (fehler) {
+      throw sicherungsFehler(fehler);
+    }
+  }
+
+  const lernstaende = {};
+  for (const [modulId, roh] of Object.entries(lernstandRoh)) {
+    if (modulId === '') { verworfen += 1; continue; }
+    try {
+      const geprueft = migriere(roh, antworten.filter((e) => e.modul === modulId));
+      lernstaende[modulId] = geprueft.lernstand;
+      verworfen += geprueft.verworfen;
+    } catch (fehler) {
+      throw sicherungsFehler(fehler);
+    }
+  }
+  return { sicherung: { profil, lernstaende, antworten }, verworfen };
+}
+
+/** Zahl der Karten in `neu`, die in `alt` fehlen oder dort älter sind (für die Rückmeldung). */
+function uebernommeneKarten(alt, neu) {
+  let anzahl = 0;
+  for (const [id, karte] of Object.entries(neu.karten)) {
+    const eigene = alt.karten[id];
+    if (!eigene || (karte.geaendert ?? 0) > (eigene.geaendert ?? 0)) anzahl += 1;
+  }
+  return anzahl;
 }
 
 /** Prüft ein gespeichertes Profil (M4) und meldet Probleme als SpeicherFehler. */
@@ -335,6 +442,70 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
       const alle = await alsPromise(tx.objectStore(ANTWORTEN).getAll());
       const { antworten, verworfen } = fuehreAntwortenZusammen(alle ?? [], []);
       return { antworten: modulId ? antworten.filter((e) => e.modul === modulId) : antworten, verworfen };
+    },
+
+    /**
+     * Liest alles Gespeicherte für eine Sicherungsdatei (F-22): Lernstand aller Module,
+     * Profil und Freitext-Antworten. Wartet, bis alle vorher begonnenen Schreibvorgänge fertig sind.
+     * @param {number} [jetzt] für Tests austauschbar
+     * @returns {Promise<object>} Inhalt der Sicherungsdatei (baueSicherung)
+     */
+    ladeSicherung(jetzt = Date.now()) {
+      return reiheEin(async () => {
+        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN], 'readonly');
+        const [schluessel, werte, profilDaten, antwortenRoh] = await Promise.all([
+          alsPromise(tx.objectStore(SPEICHER).getAllKeys()),
+          alsPromise(tx.objectStore(SPEICHER).getAll()),
+          alsPromise(tx.objectStore(PROFIL).get(PROFIL_SCHLUESSEL)),
+          alsPromise(tx.objectStore(ANTWORTEN).getAll()),
+        ]);
+        const { antworten } = fuehreAntwortenZusammen(antwortenRoh ?? [], []);
+        const lernstaende = {};
+        schluessel.forEach((modulId, i) => {
+          lernstaende[modulId] = migriere(werte[i], antworten.filter((e) => e.modul === modulId)).lernstand;
+        });
+        const profil = profilDaten == null ? null : profilAus(profilDaten).profil;
+        return baueSicherung({ profil, lernstaende, antworten }, jetzt);
+      });
+    },
+
+    /**
+     * Führt eine geprüfte Sicherung (aus pruefeSicherung) mit dem Gespeicherten zusammen,
+     * alles in einer Transaktion: Schlägt etwas fehl, bleibt der alte Stand unverändert.
+     * Die Geräte-ID dieses Geräts bleibt erhalten.
+     * @returns {Promise<{module: number, karten: number, antworten: number}>}
+     *   module: Module in der Sicherung, karten: neue oder neuere Karten, antworten: neue Antworten
+     */
+    importiere({ profil, lernstaende, antworten }) {
+      return reiheEin(async () => {
+        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN], 'readwrite');
+        const fertig = transaktionFertig(tx);
+        // Bricht die Transaktion ab, während hier noch gelesen wird, meldet `await fertig` den Fehler.
+        fertig.catch(() => {});
+        const ergebnis = { module: 0, karten: 0, antworten: 0 };
+
+        for (const [modulId, lernstand] of Object.entries(lernstaende)) {
+          const gespeichert = (await leseLernstand(tx, modulId)).lernstand;
+          ergebnis.module += 1;
+          ergebnis.karten += uebernommeneKarten(gespeichert, lernstand);
+          tx.objectStore(SPEICHER).put(fuehreZusammen(gespeichert, lernstand), modulId);
+        }
+
+        if (profil) {
+          const eigenes = profilAus(await alsPromise(tx.objectStore(PROFIL).get(PROFIL_SCHLUESSEL))).profil;
+          tx.objectStore(PROFIL).put(fuehreProfileZusammen(eigenes, profil), PROFIL_SCHLUESSEL);
+        }
+
+        const vorhanden = new Set(((await alsPromise(tx.objectStore(ANTWORTEN).getAll())) ?? []).map((e) => e?.id));
+        for (const eintrag of antworten) {
+          if (vorhanden.has(eintrag.id)) continue;
+          tx.objectStore(ANTWORTEN).put(eintrag, eintrag.id);
+          ergebnis.antworten += 1;
+        }
+
+        await fertig;
+        return ergebnis;
+      });
     },
 
     schliesse() {

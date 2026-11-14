@@ -284,3 +284,7 @@ main {
 .themenwahl label { color: var(--text-leise); font-size: 0.875rem; }
 .themenwahl .auswahl { width: 100%; }
 .themenfortschritt .textknopf { padding: 0.25rem 0; min-height: 2.75rem; }
+
+/* Einstellungen und Datensicherung (AP8) */
+.aktionen.sicherung { margin-top: 1rem; }
+.hinweis.erfolg { color: var(--ok); }

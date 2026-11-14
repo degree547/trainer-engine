@@ -1,7 +1,7 @@
 // Startbildschirm: Lernstand mit „Runde starten“, das geladene Inhaltsmodul
 // und das Laden einer Moduldatei.
 
-import { t, tn } from './i18n.js';
+import { t, tn, datumstext, SPRACHEN } from './i18n.js';
 import { el } from './dom.js';
 import { faecherleiste } from './runde.js';
 import { hinweistext, levelbalken, fortschrittszahlen, tageszielwahl } from './fortschritt.js';
@@ -43,8 +43,10 @@ export function fehlertext(fehler) {
  *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
  *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void,
- *          thema?: string|null, onThema?: (id: string|null) => void, anderswoFaellig?: number}} zustand
- *   thema: gewähltes Thema (F-06), null = alle; anderswoFaellig: fällige Fragen in den übrigen Themen
+ *          thema?: string|null, onThema?: (id: string|null) => void, anderswoFaellig?: number,
+ *          einstellungen?: object}} zustand
+ *   thema: gewähltes Thema (F-06), null = alle; anderswoFaellig: fällige Fragen in den übrigen Themen;
+ *   einstellungen: Sprache und Datensicherung, siehe einstellungskarte()
  */
 export function zeigeStart(ziel, zustand) {
   const inhalt = [];
@@ -82,6 +84,8 @@ export function zeigeStart(ziel, zustand) {
   if (zustand.fehler) {
     inhalt.push(el('section', { class: 'karte fehler', role: 'alert' }, fehlertext(zustand.fehler)));
   }
+
+  if (zustand.einstellungen) inhalt.push(einstellungskarte(zustand.einstellungen));
 
   const eingabe = el('input', {
     type: 'file', accept: '.json,application/json', id: 'moduldatei', class: 'versteckt',
@@ -164,4 +168,54 @@ function speicherhinweise({ fehler, dauerhaft, verworfen }) {
   else if (dauerhaft === 'nichtDauerhaft') hinweise.push(el('p', { class: 'hinweis' }, t('speicher.nichtDauerhaft')));
   if (verworfen > 0) hinweise.push(el('p', { class: 'hinweis warnung' }, t('speicher.verworfen', { anzahl: verworfen })));
   return hinweise;
+}
+
+/**
+ * Sprache und Datensicherung (F-22).
+ * @param {{sprache: string, onSprache: (sprache: string) => void,
+ *          sicherung: {verfuegbar: boolean, letzte?: string|null, meldung?: {art: 'ok'|'fehler', text: string}|null},
+ *          onExport: () => void, onImport: (datei: File) => void}} e
+ */
+function einstellungskarte(e) {
+  const sprachwahl = el('select', {
+    id: 'sprachwahl', class: 'auswahl',
+    onchange: (ereignis) => e.onSprache(ereignis.target.value),
+  });
+  for (const sprache of SPRACHEN) {
+    sprachwahl.append(el('option', { value: sprache, selected: sprache === e.sprache, lang: sprache }, t(`sprache.${sprache}`)));
+  }
+
+  const { verfuegbar, letzte, meldung } = e.sicherung;
+  const teile = [
+    el('p', { class: 'etikett' }, t('einstellungen.titel')),
+    el('div', { class: 'themenwahl' }, el('label', { for: 'sprachwahl' }, t('einstellungen.sprache')), sprachwahl),
+    el('h2', {}, t('sicherung.titel')),
+    el('p', { class: 'hinweis oben' }, t('sicherung.erklaerung')),
+  ];
+  if (verfuegbar) {
+    const eingabe = el('input', {
+      type: 'file', accept: '.json,application/json', id: 'sicherungsdatei', class: 'versteckt',
+      onchange: (ereignis) => {
+        const datei = ereignis.target.files?.[0];
+        ereignis.target.value = '';
+        if (datei) e.onImport(datei);
+      },
+    });
+    teile.push(el('div', { class: 'aktionen sicherung' },
+      el('button', { type: 'button', class: 'knopf zweitrangig', onclick: e.onExport }, t('sicherung.exportieren')),
+      eingabe,
+      el('label', { for: 'sicherungsdatei', class: 'knopf zweitrangig' }, t('sicherung.importieren')),
+    ));
+    teile.push(el('p', { class: 'hinweis' },
+      letzte ? t('sicherung.letzte', { datum: datumstext(letzte) }) : t('sicherung.nochKeine')));
+  } else {
+    teile.push(el('p', { class: 'hinweis warnung' }, t('sicherung.nichtVerfuegbar')));
+  }
+  if (meldung) {
+    teile.push(el('p', {
+      class: `hinweis meldung${meldung.art === 'fehler' ? ' warnung' : ' erfolg'}`,
+      role: meldung.art === 'fehler' ? 'alert' : 'status',
+    }, meldung.text));
+  }
+  return el('section', { class: 'karte' }, ...teile);
 }
