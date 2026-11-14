@@ -146,5 +146,20 @@
   "rang.titel": "Rank",
   "rang.naechster": "next rank: {rang} from level {level}",
   "rang.hoechster": "highest rank reached",
-  "rang.aufstieg": "New rank reached"
+  "rang.aufstieg": "New rank reached",
+  "lernen.statistik": "Statistics",
+  "statistik.titel": "Statistics",
+  "statistik.zurueck": "Back",
+  "statistik.fortschritt": "Progress by topic",
+  "statistik.gesamtSicher": "{prozent} % mastered",
+  "statistik.sicherErklaerung": "Mastered means box 4 or 5. The light part of the bar shows questions in boxes 1 to 3.",
+  "statistik.balkenLabel": "{thema}: {prozent} % mastered",
+  "statistik.zahlen": "{sicher} mastered · {lernend} in progress · {neu} new (of {gesamt})",
+  "statistik.schwaechen": "Weak spots",
+  "statistik.schwaechenErklaerung": "Questions with the highest error rate, from {min} answers. Tap to see the correct answer.",
+  "statistik.keineSchwaechen": "No weak spots yet. A question appears here once it has been answered at least {min} times and missed at least once.",
+  "statistik.zaehlungSeit": "Counting started with the statistics update. Earlier free-text answers are included, earlier multiple-choice answers are not.",
+  "statistik.falschVon.eins": "{anzahl} of {versuche} wrong",
+  "statistik.falschVon.mehr": "{anzahl} of {versuche} wrong",
+  "statistik.fach": "Box {fach}"
 }

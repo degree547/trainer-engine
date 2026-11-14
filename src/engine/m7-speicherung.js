@@ -28,6 +28,13 @@
 // Schlüssel ist die zufällige "id". Einträge werden nur angehängt, nie geändert. So kann
 // der Export (AP8) sie mitnehmen und ein Import zweier Geräte sie einfach vereinen
 // (fuehreAntwortenZusammen), ohne dass etwas doppelt oder verloren geht.
+//
+// Lernstand-Version 2 (AP7) zählt je Karte die richtigen und falschen Antworten. Ein
+// Stand der Version 1 hat diese Zähler noch nicht. Beim Umstellen werden sie einmalig aus den
+// gespeicherten Freitext-Antworten dieses Moduls nachgetragen (alle stammen aus der Zeit
+// vor Version 2, es wird also nichts doppelt gezählt). Multiple-Choice-Fragen beginnen bei 0.
+// Beim Zusammenführen gewinnt die jüngere Karte samt ihren Zählern; beantworten zwei
+// Geräte dieselbe Frage, fehlt dem älteren Eintrag deshalb eine Antwort in der Zählung.
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
 import { pruefeProfil, ProfilFehler } from './m4-gamification.js';
@@ -55,23 +62,48 @@ function istGueltigeKarte(karte) {
     && Number.isInteger(karte.fach) && karte.fach >= 1 && karte.fach <= FAECHER
     && typeof karte.faellig === 'string' && DATUM.test(karte.faellig)
     && (karte.zuletzt === undefined || (typeof karte.zuletzt === 'string' && DATUM.test(karte.zuletzt)))
-    && (karte.geaendert === undefined || Number.isFinite(karte.geaendert));
+    && (karte.geaendert === undefined || Number.isFinite(karte.geaendert))
+    && istZaehler(karte.richtig) && istZaehler(karte.falsch);
+}
+
+function istZaehler(wert) {
+  return wert === undefined || (Number.isInteger(wert) && wert >= 0);
+}
+
+/**
+ * Trägt die Zähler richtig/falsch aus Freitext-Antworten nach (Umstellung auf Version 2).
+ * Gezählt werden nur Antworten zu Fragen, die eine Karte haben.
+ */
+function zaehlerAusAntworten(karten, antworten) {
+  for (const karte of Object.values(karten)) {
+    karte.richtig = 0;
+    karte.falsch = 0;
+  }
+  for (const e of antworten) {
+    if (!istGueltigeAntwort(e)) continue;
+    const karte = karten[e.frage];
+    if (!karte) continue;
+    if (e.gewusst) karte.richtig += 1;
+    else karte.falsch += 1;
+  }
 }
 
 /**
  * Prüft einen geladenen Lernstand und stellt ältere Versionen um.
  * Ungültige Einträge werden verworfen und gezählt, statt den ganzen Stand abzulehnen.
+ * @param {object} daten gespeicherter Lernstand
+ * @param {object[]} [antworten] gespeicherte Freitext-Antworten dieses Moduls; nur für die
+ *   Umstellung von Version 1 nötig (Zähler richtig/falsch nachtragen)
  * @returns {{lernstand: object, verworfen: number}}
  * @throws {SpeicherFehler} 'speicher.neuereVersion', wenn der Stand aus einer neueren App stammt
  */
-export function migriere(daten) {
+export function migriere(daten, antworten = []) {
   if (daten == null) return { lernstand: neuerLernstand(), verworfen: 0 };
   if (typeof daten !== 'object' || typeof daten.karten !== 'object' || daten.karten === null) {
     throw new SpeicherFehler('speicher.unlesbar');
   }
   const version = daten.version ?? 1;
   if (version > LERNSTAND_VERSION) throw new SpeicherFehler('speicher.neuereVersion');
-  // Hier kommen künftige Umstellungen hin, z. B. if (version < 2) { ... }.
   // Version 1 ist der erste gespeicherte Stand; "geaendert" darf fehlen und zählt dann als 0.
 
   const karten = {};
@@ -80,6 +112,8 @@ export function migriere(daten) {
     if (istGueltigeKarte(karte)) karten[id] = { ...karte };
     else verworfen += 1;
   }
+  // Version 1 → 2: Zähler richtig/falsch aus den Freitext-Antworten nachtragen.
+  if (version < 2) zaehlerAusAntworten(karten, antworten);
   return { lernstand: { version: LERNSTAND_VERSION, karten }, verworfen };
 }
 
@@ -164,6 +198,25 @@ function transaktionFertig(tx) {
   });
 }
 
+/** Version eines gespeicherten Lernstands (fehlt sie, ist es Version 1). */
+function versionVon(daten) {
+  return daten != null && typeof daten === 'object' ? (daten.version ?? 1) : LERNSTAND_VERSION;
+}
+
+/**
+ * Liest den Lernstand eines Moduls in einer Transaktion über "lernstand" und "antworten".
+ * Die Freitext-Antworten werden nur für die Umstellung von Version 1 gelesen.
+ */
+async function leseLernstand(tx, modulId) {
+  const daten = await alsPromise(tx.objectStore(SPEICHER).get(modulId));
+  let antworten = [];
+  if (versionVon(daten) < 2) {
+    const alle = await alsPromise(tx.objectStore(ANTWORTEN).getAll());
+    antworten = (alle ?? []).filter((e) => e?.modul === modulId);
+  }
+  return migriere(daten, antworten);
+}
+
 /**
  * Öffnet den Speicher.
  * @param {{indexedDB?: IDBFactory, name?: string}} [optionen] für Tests austauschbar
@@ -200,9 +253,8 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
      * @returns {Promise<{lernstand: object, verworfen: number}>}
      */
     async lade(modulId) {
-      const tx = db.transaction(SPEICHER, 'readonly');
-      const daten = await alsPromise(tx.objectStore(SPEICHER).get(modulId));
-      return migriere(daten);
+      const tx = db.transaction([SPEICHER, ANTWORTEN], 'readonly');
+      return leseLernstand(tx, modulId);
     },
 
     /**
@@ -211,12 +263,11 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
      */
     speichere(modulId, lernstand) {
       return reiheEin(async () => {
-        const tx = db.transaction(SPEICHER, 'readwrite');
-        const speicher = tx.objectStore(SPEICHER);
+        const tx = db.transaction([SPEICHER, ANTWORTEN], 'readwrite');
         const fertig = transaktionFertig(tx);
-        const gespeichert = migriere(await alsPromise(speicher.get(modulId))).lernstand;
+        const gespeichert = (await leseLernstand(tx, modulId)).lernstand;
         const zusammen = fuehreZusammen(lernstand, gespeichert);
-        speicher.put(zusammen, modulId);
+        tx.objectStore(SPEICHER).put(zusammen, modulId);
         await fertig;
         return zusammen;
       });

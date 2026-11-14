@@ -18,7 +18,8 @@ const modul = {
 };
 const ids = (fragen) => fragen.map((f) => f.id);
 // Vergleich ohne den genauen Zeitstempel, der eigens geprüft wird.
-const ohneZeit = ({ geaendert, ...karte }) => karte;
+// Nur Fach und Termine vergleichen; Zeitpunkt und Zähler prüfen eigene Tests.
+const ohneZeit = ({ geaendert, richtig, falsch, ...karte }) => karte;
 
 test('Datum: Ortszeit, Monats- und Jahreswechsel, Zeitumstellung', () => {
   assert.equal(datumVon(new Date(2026, 10, 22, 23, 59)), '2026-11-22');

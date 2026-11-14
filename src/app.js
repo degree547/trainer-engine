@@ -12,9 +12,11 @@ import {
 import {
   oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, freitextEintrag,
 } from './engine/m7-speicherung.js';
+import { fortschrittJeThema, schwaechenliste } from './engine/m5-statistik.js';
 import { ladeTexte, t } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
 import { zeigeRunde } from './ui/runde.js';
+import { zeigeStatistik } from './ui/statistik.js';
 
 // Welches Inhaltsmodul beim Start geladen wird (amtlicher SKS-Katalog, AP2).
 const STANDARDMODUL = 'content/sks/sks.json';
@@ -108,8 +110,20 @@ function zurStartseite() {
     onDatei: ladeDatei, onStandard: ladeStandard,
     onRunde: () => starteRunde('normal'),
     onVorziehen: () => starteRunde('vorziehen'),
+    onStatistik: zurStatistik,
   });
   window.scrollTo(0, 0);
+}
+
+/** Fortschritt je Thema und Schwächenliste (M5). */
+function zurStatistik() {
+  const { modul, lernstand } = zustand;
+  zeigeStatistik(hauptbereich, {
+    modul,
+    fortschritt: fortschrittJeThema(modul, lernstand),
+    schwaechen: schwaechenliste(modul, lernstand),
+    onZurueck: zurStartseite,
+  });
 }
 
 function starteRunde(modus) {

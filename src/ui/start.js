@@ -42,7 +42,7 @@ export function fehlertext(fehler) {
  *          fortschritt?: object, hinweis?: {code: string, werte: object}, onTagesziel?: (wert: number) => void,
  *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
- *          onRunde: () => void, onVorziehen: () => void}} zustand
+ *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void}} zustand
  */
 export function zeigeStart(ziel, zustand) {
   const inhalt = [];
@@ -108,6 +108,9 @@ function lernkarte(lernen, zustand) {
   }
   if (lernen.spaeter > 0) {
     knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onVorziehen }, t('lernen.vorziehen')));
+  }
+  if (zustand.onStatistik) {
+    knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onStatistik }, t('lernen.statistik')));
   }
   // Lernerinnerung beim Start: Tagesziel und Streak (statt Benachrichtigungen).
   const erinnerung = zustand.hinweis

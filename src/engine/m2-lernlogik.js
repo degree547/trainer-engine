@@ -3,10 +3,13 @@
 // Themen-IDs und der Reihenfolge, die das Inhaltsmodul vorgibt.
 //
 // Lernstand (wird von M7 gespeichert):
-//   { version: 1, karten: { "<frage-id>": { fach: 1..5, faellig: "JJJJ-MM-TT", zuletzt: "JJJJ-MM-TT",
-//                                           geaendert: <Millisekunden seit 1970> } } }
+//   { version: 2, karten: { "<frage-id>": { fach: 1..5, faellig: "JJJJ-MM-TT", zuletzt: "JJJJ-MM-TT",
+//                                           geaendert: <Millisekunden seit 1970>,
+//                                           richtig: <Anzahl>, falsch: <Anzahl> } } }
 // "geaendert" ist der genaue Zeitpunkt der letzten Bewertung. Damit lassen sich zwei
 // Lernstände (zwei Geräte, zwei Tabs) je Frage zusammenführen: der jüngere Eintrag gewinnt.
+// "richtig" und "falsch" zählen alle Antworten zu der Frage, auch die aus Übungen (Version 2,
+// Grundlage der Fehlerquote in M5). Fehlen sie, zählen sie als 0.
 // Eine Frage ohne Eintrag in "karten" ist neu. Einträge zu Fragen, die es im
 // Modul nicht mehr gibt, bleiben erhalten, werden aber übersprungen (F-23).
 //
@@ -18,7 +21,7 @@
 // - Eine Runde: zuerst fällige Fragen (am längsten überfällig zuerst), dann neue
 //   Fragen Thema für Thema in der Reihenfolge des Moduls (F-05).
 
-export const LERNSTAND_VERSION = 1;
+export const LERNSTAND_VERSION = 2;
 export const FAECHER = 5;
 /** Tage bis zur nächsten Wiederholung je Fach (Fach 1 bis 5). */
 export const ABSTAENDE = [1, 2, 4, 8, 16];
@@ -58,15 +61,19 @@ export function neuerLernstand() {
 export function bewerte(lernstand, frageId, richtig, heute, { uebung = false, jetzt = Date.now() } = {}) {
   if (!DATUM.test(heute)) throw new Error(`Ungültiges Datum: ${heute}`);
   const alt = lernstand.karten[frageId];
+  const zaehler = {
+    richtig: (alt?.richtig ?? 0) + (richtig ? 1 : 0),
+    falsch: (alt?.falsch ?? 0) + (richtig ? 0 : 1),
+  };
   let karte;
   if (!richtig) {
-    karte = { fach: 1, faellig: plusTage(heute, ABSTAENDE[0]), zuletzt: heute, geaendert: jetzt };
+    karte = { fach: 1, faellig: plusTage(heute, ABSTAENDE[0]), zuletzt: heute, geaendert: jetzt, ...zaehler };
   } else if (uebung && alt) {
-    karte = { ...alt, zuletzt: heute, geaendert: jetzt };
+    karte = { ...alt, zuletzt: heute, geaendert: jetzt, ...zaehler };
   } else {
     // Eine neue Frage gilt als Fach 1; richtig beantwortet kommt sie in Fach 2.
     const fach = Math.min((alt?.fach ?? 1) + 1, FAECHER);
-    karte = { fach, faellig: plusTage(heute, ABSTAENDE[fach - 1]), zuletzt: heute, geaendert: jetzt };
+    karte = { fach, faellig: plusTage(heute, ABSTAENDE[fach - 1]), zuletzt: heute, geaendert: jetzt, ...zaehler };
   }
   return { ...lernstand, karten: { ...lernstand.karten, [frageId]: karte } };
 }

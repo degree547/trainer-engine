@@ -146,5 +146,20 @@
   "rang.titel": "Rang",
   "rang.naechster": "nächster Rang: {rang} ab Level {level}",
   "rang.hoechster": "höchster Rang erreicht",
-  "rang.aufstieg": "Neuer Rang erreicht"
+  "rang.aufstieg": "Neuer Rang erreicht",
+  "lernen.statistik": "Statistik",
+  "statistik.titel": "Statistik",
+  "statistik.zurueck": "Zurück",
+  "statistik.fortschritt": "Fortschritt je Thema",
+  "statistik.gesamtSicher": "{prozent} % sicher",
+  "statistik.sicherErklaerung": "Sicher sind Fragen in Fach 4 oder 5. Der helle Teil des Balkens zeigt die Fragen in Fach 1 bis 3.",
+  "statistik.balkenLabel": "{thema}: {prozent} % sicher",
+  "statistik.zahlen": "{sicher} sicher · {lernend} in Arbeit · {neu} neu (von {gesamt})",
+  "statistik.schwaechen": "Schwächenliste",
+  "statistik.schwaechenErklaerung": "Fragen mit der höchsten Fehlerquote, ab {min} Antworten. Antippen zeigt die richtige Antwort.",
+  "statistik.keineSchwaechen": "Noch keine Schwächen erkannt. Eine Frage erscheint hier, sobald sie mindestens {min}-mal beantwortet und dabei mindestens einmal nicht gewusst wurde.",
+  "statistik.zaehlungSeit": "Gezählt wird seit dem Update mit der Statistik. Frühere Freitext-Antworten sind eingerechnet, frühere Multiple-Choice-Antworten nicht.",
+  "statistik.falschVon.eins": "{anzahl} von {versuche} falsch",
+  "statistik.falschVon.mehr": "{anzahl} von {versuche} falsch",
+  "statistik.fach": "Fach {fach}"
 }
