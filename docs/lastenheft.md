@@ -90,6 +90,7 @@ Die Engine besteht aus neun Modulen, die sich einzeln ändern lassen. Jede Anfor
 | F-26 | M8 Inhaltsformat | Beim Laden wird das Modul geprüft, Fehler erscheinen mit Zeile und Klartext | Soll |
 | F-27 | M8 Inhaltsformat | Fragen lassen sich aus einer CSV-Datei importieren | Kann |
 | F-37 | M8 Inhaltsformat | Ränge (Name, Bild, ab welchem Level) legt das Inhaltsmodul fest, nicht die Engine; jedes Modul bringt eigene Ränge mit (Nachtrag) | Soll |
+| F-38 | M8 Inhaltsformat | Eigene Bilder für die zwölf SKS-Ränge ersetzen die Platzhalter; sie entstehen außerhalb der App und werden über das Feld „bild“ (F-37) eingebunden; kann jederzeit vorgezogen werden (Nachtrag) | Kann |
 | F-28 | M9 Generatoren | Ein Modul kann Rechenaufgaben mit Zufallswerten erzeugen, die Lösung wird berechnet | Soll |
 
 ## Inhaltsmodule
@@ -121,6 +122,17 @@ Das SKS-Modul ist das erste Inhaltsmodul und der Test, ob die Engine wirklich in
 | 40 | Admiral |
 
 Kapitän markiert die Prüfungsreife, die beiden Admiralsränge belohnen das Weiterüben. Die Level-Grenzen sind vorläufig und werden an die XP-Kurve aus AP6 angepasst.
+
+**Anforderungen an die Rangbilder (F-38)**
+
+- Ein Bild je Rang, zwölf insgesamt, in einheitlichem Stil; der Aufstieg ist am Bild erkennbar (zum Beispiel mehr Streifen oder Sterne)
+- Quadratisch mit Motiv in der Mitte; die App zeigt die Bilder rund beschnitten, nichts Wichtiges darf in den Ecken liegen
+- Gut erkennbar bei 40 Pixeln (Startseite) und 64 Pixeln (Rangaufstieg): wenige Details, keine Schrift im Bild, der Name steht daneben
+- Funktioniert im Hell- und Dunkelmodus: transparenter Hintergrund mit genug Kontrast oder ein eigener runder Hintergrund
+- Format SVG, sonst PNG oder WebP mit 256 × 256 Pixeln
+- Höchstens 30 KB je Bild, weil die App alle Bilder für den Offline-Betrieb speichert
+- Dateinamen ohne Umlaute und Leerzeichen, abgelegt unter `content/sks/raenge/`, zum Beispiel `01-suesswassermatrose.svg`
+- Rechte: selbst erstellt, mit einem KI-Werkzeug erzeugt, dessen Bedingungen die Nutzung erlauben (zum Beispiel Copilot), oder frei lizenziert. Keine Kopien echter Dienstgradabzeichen, Logos oder bekannter Figuren. Weil das Repo öffentlich ist, steht die Herkunft jedes Bilds in `content/sks/raenge/HERKUNFT.md`
 
 **IAPP (später)**
 
@@ -189,3 +201,4 @@ Diese Anforderungen sind erst während der Umsetzung entstanden und wurden nacht
 | 14.11.2026 | F-36 | Ränge mit kleinem Bild je Level | Wunsch während der Umsetzung, ergänzt die Level (F-14) |
 | 14.11.2026 | F-37 | Ränge im Inhaltsmodul statt in der Engine | Ränge sollen je Modul verschieden sein: SKS nautisch, andere Module eigene |
 | 14.11.2026 | F-36 | Platzhalter statt Rangbilder in Version 1 | Eigene Bilder brauchen Zeit und kommen später |
+| 14.11.2026 | F-38 | Eigene Rangbilder als Kann-Anforderung, jederzeit vorziehbar | Bilder entstehen mit Copilot; wichtig erst, wenn die Platzhalter beim Lernen stören |
