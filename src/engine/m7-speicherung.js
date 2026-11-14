@@ -21,15 +21,24 @@
 // Das Profil wird nicht als Ganzes überschrieben, sondern mit aendereProfil()
 // innerhalb einer Transaktion gelesen, geändert und geschrieben. So zählen XP aus
 // zwei offenen Tabs beide.
+//
+// Seit Datenbankversion 3 gibt es den Objektspeicher "antworten" (F-34): jede getippte
+// Freitext-Antwort als eigener Eintrag
+//   { id, modul, frage, zeit (Millisekunden seit 1970), text, gewusst, modus }
+// Schlüssel ist die zufällige "id". Einträge werden nur angehängt, nie geändert. So kann
+// der Export (AP8) sie mitnehmen und ein Import zweier Geräte sie einfach vereinen
+// (fuehreAntwortenZusammen), ohne dass etwas doppelt oder verloren geht.
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
 import { pruefeProfil, ProfilFehler } from './m4-gamification.js';
 
 export const DB_NAME = 'trainer-engine';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 const SPEICHER = 'lernstand';
 const PROFIL = 'profil';
 const PROFIL_SCHLUESSEL = 'profil';
+const ANTWORTEN = 'antworten';
+const MODI = ['normal', 'vorziehen', 'fehler'];
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -87,6 +96,47 @@ export function fuehreZusammen(a, b) {
   return { version: LERNSTAND_VERSION, karten };
 }
 
+// --- Freitext-Antworten (F-34) -------------------------------------------
+
+function neueAntwortId(jetzt) {
+  const zufall = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 12);
+  return `${jetzt.toString(36)}-${zufall}`;
+}
+
+/**
+ * Baut den Eintrag für eine Freitext-Antwort (F-34).
+ * @param {{modul: string, frage: string, text: string, gewusst: boolean, modus: string}} antwort
+ * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
+ */
+export function freitextEintrag({ modul, frage, text, gewusst, modus }, jetzt = Date.now()) {
+  return { id: neueAntwortId(jetzt), modul, frage, zeit: jetzt, text: String(text ?? ''), gewusst: Boolean(gewusst), modus };
+}
+
+export function istGueltigeAntwort(e) {
+  return e != null && typeof e === 'object'
+    && typeof e.id === 'string' && e.id !== ''
+    && typeof e.modul === 'string' && e.modul !== ''
+    && typeof e.frage === 'string' && e.frage !== ''
+    && Number.isFinite(e.zeit) && typeof e.text === 'string' && typeof e.gewusst === 'boolean'
+    && MODI.includes(e.modus);
+}
+
+/**
+ * Vereint zwei Listen von Freitext-Antworten (für den Import in AP8): jede ID einmal,
+ * sortiert nach Zeitpunkt. Ungültige Einträge werden übersprungen und gezählt.
+ * @returns {{antworten: object[], verworfen: number}}
+ */
+export function fuehreAntwortenZusammen(a, b) {
+  const nachId = new Map();
+  let verworfen = 0;
+  for (const e of [...a, ...b]) {
+    if (!istGueltigeAntwort(e)) { verworfen += 1; continue; }
+    if (!nachId.has(e.id)) nachId.set(e.id, { ...e });
+  }
+  const antworten = [...nachId.values()].sort((x, y) => x.zeit - y.zeit || (x.id < y.id ? -1 : 1));
+  return { antworten, verworfen };
+}
+
 /** Prüft ein gespeichertes Profil (M4) und meldet Probleme als SpeicherFehler. */
 function profilAus(daten) {
   try {
@@ -129,6 +179,7 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
       const neu = anfrage.result;
       if (!neu.objectStoreNames.contains(SPEICHER)) neu.createObjectStore(SPEICHER);
       if (!neu.objectStoreNames.contains(PROFIL)) neu.createObjectStore(PROFIL);
+      if (!neu.objectStoreNames.contains(ANTWORTEN)) neu.createObjectStore(ANTWORTEN);
     };
     db = await alsPromise(anfrage);
   } catch (fehler) {
@@ -206,6 +257,33 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
         await fertig;
         return ergebnis;
       });
+    },
+
+    /**
+     * Speichert eine Freitext-Antwort (Eintrag aus freitextEintrag). Bestehende Einträge
+     * bleiben unverändert.
+     * @returns {Promise<void>}
+     */
+    speichereAntwort(eintrag) {
+      if (!istGueltigeAntwort(eintrag)) return Promise.reject(new SpeicherFehler('speicher.schreibfehler'));
+      return reiheEin(async () => {
+        const tx = db.transaction(ANTWORTEN, 'readwrite');
+        const fertig = transaktionFertig(tx);
+        tx.objectStore(ANTWORTEN).put(eintrag, eintrag.id);
+        await fertig;
+      });
+    },
+
+    /**
+     * Lädt alle gespeicherten Freitext-Antworten, optional nur die eines Moduls,
+     * sortiert nach Zeitpunkt. Beschädigte Einträge werden übersprungen und gezählt.
+     * @returns {Promise<{antworten: object[], verworfen: number}>}
+     */
+    async ladeAntworten(modulId) {
+      const tx = db.transaction(ANTWORTEN, 'readonly');
+      const alle = await alsPromise(tx.objectStore(ANTWORTEN).getAll());
+      const { antworten, verworfen } = fuehreAntwortenZusammen(alle ?? [], []);
+      return { antworten: modulId ? antworten.filter((e) => e.modul === modulId) : antworten, verworfen };
     },
 
     schliesse() {

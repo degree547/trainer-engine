@@ -6,6 +6,7 @@
 //   content/sks/quelle/Fragenkatalog-SKS.pdf   amtlicher Katalog (von ELWIS heruntergeladen)
 //   tools/sks/korrekturen.json                  Handkorrekturen je Frage-ID (Trennung Frage/Antwort, Hinweise)
 //   tools/sks/kernpunkte-*.json                 Kernpunkte je Frage-ID (aus den amtlichen Antworten abgeleitet)
+//   tools/sks/raenge.json                       Nautische Ränge je Level (F-36, F-37), Bilder folgen später
 // Ausgabe:
 //   content/sks/sks.json                        Inhaltsmodul
 //   Bericht auf der Konsole: Fragenzahl je Bereich, unsichere Trennungen, fehlende Kernpunkte
@@ -168,6 +169,7 @@ export function automatischeKernpunkte(antwort) {
 
 export async function baueModul(text) {
   const korrekturen = await leseJson(join(ARBEIT, 'korrekturen.json'), {});
+  const raenge = await leseJson(join(ARBEIT, 'raenge.json'), []);
   const kernpunkte = await leseKernpunkte();
   const bericht = { anzahl: {}, unsicher: [], ohneKernpunkte: [], bild: [], korrigiert: 0 };
 
@@ -218,6 +220,7 @@ export async function baueModul(text) {
       hinweis: 'Fragen und Musterantworten sind amtlich. Die Kernpunkte sind aus den Musterantworten abgeleitet und ungeprüft, bis sie gegengelesen wurden.',
     },
     themen: BEREICHE.map((b) => ({ id: `sks-${b.id}`, titel: b.titel })),
+    ...(raenge.length > 0 ? { raenge } : {}),
     fragen,
   };
   return { modul, bericht };

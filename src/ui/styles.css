@@ -229,3 +229,22 @@ main {
 .belohnung .xp { margin: 0; font-size: 2rem; font-weight: 700; color: var(--akzent); font-variant-numeric: tabular-nums; }
 .belohnung .erinnerung { margin-top: 0.75rem; }
 .belohnung .level { margin: 0; }
+
+/* Ränge (AP6A, F-36): Bild oder Platzhalter, Name, nächster Rang */
+.rang { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.75rem; }
+.rang p, .rangaufstieg p { display: flex; flex-direction: column; margin: 0; line-height: 1.3; }
+.rang .etikett, .rangaufstieg .etikett { margin: 0; }
+.rangname { font-size: 1.125rem; }
+.rangbild { flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; object-fit: cover; }
+.rangbild.gross { width: 4rem; height: 4rem; }
+.rangbild.platzhalter {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--hintergrund); border: 2px dashed var(--rand);
+  color: var(--text-leise); font-weight: 700; font-size: 1.125rem;
+}
+.rangbild.gross.platzhalter { font-size: 1.5rem; }
+.rangaufstieg {
+  display: flex; align-items: center; gap: 0.875rem; margin: 0.25rem 0 0.75rem; padding: 0.75rem;
+  border: 2px solid var(--akzent); border-radius: 0.75rem; background: var(--hintergrund);
+}
+.rangaufstieg .rangname { font-size: 1.25rem; color: var(--akzent); }

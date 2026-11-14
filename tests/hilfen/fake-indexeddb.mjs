@@ -1,6 +1,6 @@
 // Kleine Nachbildung von IndexedDB für node --test (ohne Pakete).
 // Sie kann nur, was M7 benutzt: open mit Upgrade, ein Objektspeicher mit
-// eigenen Schlüsseln, get und put in Transaktionen. Werte werden wie im
+// eigenen Schlüsseln, get, getAll und put in Transaktionen. Werte werden wie im
 // Browser kopiert (structuredClone), damit Tests keine Referenzen teilen.
 
 class Anfrage {
@@ -27,6 +27,7 @@ class Transaktion {
   objectStore() {
     return {
       get: (schluessel) => this.anfrage(() => structuredClone(this.daten.get(schluessel))),
+      getAll: () => this.anfrage(() => structuredClone([...this.daten.values()])),
       put: (wert, schluessel) => this.anfrage(() => {
         if (this.schreibfehler) throw new Error('Kein Platz mehr');
         this.daten.set(schluessel, structuredClone(wert));

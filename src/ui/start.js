@@ -15,6 +15,7 @@ function ortstext(f) {
   if (ort.art === 'meta') teile.push(t('fehler.ortMeta'));
   if (ort.art === 'thema') teile.push(t(ort.id ? 'fehler.ortThemaId' : 'fehler.ortThema', ort));
   if (ort.art === 'frage') teile.push(t(ort.id ? 'fehler.ortFrageId' : 'fehler.ortFrage', ort));
+  if (ort.art === 'rang') teile.push(t('fehler.ortRang', ort));
   return teile.join(' · ');
 }
 
@@ -124,12 +125,12 @@ function lernkarte(lernen, zustand) {
   );
 }
 
-/** XP, Level, Streak und Tagesziel (F-13, F-14). */
+/** XP, Level mit Rang, Streak und Tagesziel (F-13, F-14, F-36). */
 function fortschrittskarte(zustand) {
   const f = zustand.fortschritt;
   return el('section', { class: 'karte' },
     el('p', { class: 'etikett' }, t('fortschritt.titel')),
-    levelbalken(f.level),
+    levelbalken(f.level, f.rang),
     fortschrittszahlen(f),
     zustand.onTagesziel ? tageszielwahl(f.streak.ziel, zustand.onTagesziel) : null,
   );

@@ -23,6 +23,8 @@
 // - Streak: Tage in Folge mit erreichtem Tagesziel. Ist das Ziel heute noch offen,
 //   zählt der Streak bis gestern weiter (F-13).
 // - Level: Level 2 ab 100 XP; jedes weitere Level braucht 50 XP mehr als das vorige (F-14).
+// - Rang: Jedes Level gehört zu einem Rang (F-36). Welche Ränge es gibt, legt das
+//   Inhaltsmodul fest (F-37, Feld "raenge" in M8); ohne Ränge zeigt die App nur das Level.
 
 import { plusTage } from './m2-lernlogik.js';
 
@@ -141,6 +143,33 @@ export function levelVon(xp) {
   const fuerNaechstes = levelStart(level + 1) - start;
   const imLevel = xp - start;
   return { level, imLevel, fuerNaechstes, anteil: imLevel / fuerNaechstes };
+}
+
+/**
+ * Rang zu einem Level (F-36). `raenge` kommt aus dem Inhaltsmodul (F-37), aufsteigend nach "ab".
+ * @returns {{name: string, bild?: string, ab: number, nr: number, naechster: object|null}|null}
+ *   nr: Nummer des Rangs ab 1; naechster: der folgende Rang oder null; null ohne Ränge
+ */
+export function rangVon(raenge, level) {
+  if (!Array.isArray(raenge) || raenge.length === 0) return null;
+  let nr = 0;
+  while (nr + 1 < raenge.length && raenge[nr + 1].ab <= level) nr += 1;
+  return { ...raenge[nr], nr: nr + 1, naechster: raenge[nr + 1] ?? null };
+}
+
+/**
+ * Was sich zwischen zwei XP-Ständen geändert hat (für das Rundenende).
+ * @returns {{level: boolean, rang: object|null}} rang: der neue Rang, wenn ein Rangaufstieg dabei war
+ */
+export function aufstiegVon(xpVorher, xpNachher, raenge) {
+  const vorher = levelVon(xpVorher).level;
+  const nachher = levelVon(xpNachher).level;
+  const alterRang = rangVon(raenge, vorher);
+  const neuerRang = rangVon(raenge, nachher);
+  return {
+    level: nachher > vorher,
+    rang: neuerRang && alterRang && neuerRang.nr > alterRang.nr ? neuerRang : null,
+  };
 }
 
 /**

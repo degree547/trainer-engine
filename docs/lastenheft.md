@@ -68,23 +68,28 @@ Die Engine besteht aus neun Modulen, die sich einzeln ändern lassen. Jede Anfor
 | F-29 | M3 Fragetypen | Freitext: Die Antwort wird getippt, danach erscheinen Musterantwort und Kernpunkte als Checkliste. Die Selbstbewertung bestimmt das Leitner-Fach | Muss |
 | F-30 | M3 Fragetypen | Nach jeder Freitext-Antwort wird die Musterantwort angezeigt, mit Angabe ihrer Herkunft (amtlich, Buch oder eigen) | Muss |
 | F-31 | M3 Fragetypen | KI-Bewertung des Freitexts gegen die Musterantwort über einen Proxy; nur online und nicht Teil von Version 1 | Kann |
+| F-33 | M3 Fragetypen | Freitext: Die Enter-Taste bestätigt die Eingabe, Shift+Enter erzeugt einen Zeilenumbruch (Nachtrag) | Soll |
 | F-12 | M4 Gamification | XP pro richtiger Antwort, Bonus für eine Runde ohne Fehler | Muss |
 | F-13 | M4 Gamification | Tages-Streak mit einstellbarem Tagesziel (Standard: eine Runde) | Muss |
 | F-14 | M4 Gamification | Level mit Fortschrittsbalken | Soll |
 | F-15 | M4 Gamification | Rundenende zeigt XP, Trefferquote und aktuellen Streak | Muss |
 | F-16 | M4 Gamification | Lernerinnerung per Benachrichtigung (ohne Backend technisch begrenzt, siehe offene Fragen) | Kann |
+| F-36 | M4 Gamification | Jedes Level hat einen Rang mit Namen und kleinem Bild; der Rang erscheint bei der Level-Anzeige und beim Aufstieg; fehlt das Bild, erscheint ein Platzhalter (Nachtrag) | Soll |
 | F-17 | M5 Statistik | Fortschritt je Thema: Anteil der Fragen in Fach 4 und 5 | Muss |
 | F-18 | M5 Statistik | Schwächenliste mit den Fragen der höchsten Fehlerquote | Soll |
 | F-19 | M5 Statistik | Lernkalender mit Lerntagen und Runden | Kann |
+| F-35 | M5 Statistik | KI-Auswertung der gespeicherten Freitext-Antworten, um wiederkehrende Schwächen zu erkennen; nicht Teil von Version 1 (Nachtrag) | Kann |
 | F-20 | M6 Prüfungssimulation | Simulation mit Fragenzahl, Zeitlimit und Bestehensgrenze aus dem Modul, Auswertung je Thema | Soll |
 | F-21 | M7 Speicherung | Fortschritt wird lokal im Browser gespeichert | Muss |
 | F-22 | M7 Speicherung | Export und Import des Fortschritts als Datei | Muss |
 | F-23 | M7 Speicherung | Der Fortschritt bleibt erhalten, wenn ein Modul aktualisiert wird (stabile Frage-IDs) | Muss |
+| F-34 | M7 Speicherung | Jede Freitext-Antwort wird mit Frage-ID, Zeitstempel, eingegebenem Text und Selbstbewertung lokal gespeichert und ist im Export (F-22) enthalten (Nachtrag) | Muss |
 | F-24 | M8 Inhaltsformat | Ein Modul ist eine JSON-Datei mit Metadaten, Themen und Fragen | Muss |
 | F-25 | M8 Inhaltsformat | Jede Frage hat ID, Thema, Typ, richtige Antwort, Erklärung und Quellenangabe | Muss |
 | F-32 | M8 Inhaltsformat | Freitextfragen haben Pflichtfelder für Musterantwort, Kernpunkte, Herkunft der Antwort und Quelle | Muss |
 | F-26 | M8 Inhaltsformat | Beim Laden wird das Modul geprüft, Fehler erscheinen mit Zeile und Klartext | Soll |
 | F-27 | M8 Inhaltsformat | Fragen lassen sich aus einer CSV-Datei importieren | Kann |
+| F-37 | M8 Inhaltsformat | Ränge (Name, Bild, ab welchem Level) legt das Inhaltsmodul fest, nicht die Engine; jedes Modul bringt eigene Ränge mit (Nachtrag) | Soll |
 | F-28 | M9 Generatoren | Ein Modul kann Rechenaufgaben mit Zufallswerten erzeugen, die Lösung wird berechnet | Soll |
 
 ## Inhaltsmodule
@@ -98,6 +103,24 @@ Das SKS-Modul ist das erste Inhaltsmodul und der Test, ob die Engine wirklich in
 - Fragen stammen aus eigenen Kursnotizen und eigenen Formulierungen, nicht aus kopierten Buchtexten
 - Jede Frage nennt ihre Quelle (Buchkapitel oder Kursdatum), damit sie sich prüfen lässt
 - Generatoren für Rechenaufgaben, die ohne Karte lösbar sind (Kurs, Distanz, Zeit, Geschwindigkeit, Missweisung, Deviation, Versatz durch a) Wind und b) Strömung)
+- Nautische Ränge, zwölf Stufen von Süßwassermatrose bis Admiral (Tabelle unten); Bilder folgen später (selbst erstellt oder frei lizenziert), bis dahin Platzhalter (Nachtrag)
+
+| Ab Level | Rang |
+| --- | --- |
+| 1 | Süßwassermatrose |
+| 3 | Schiffsjunge |
+| 5 | Leichtmatrose |
+| 8 | Matrose |
+| 11 | Vollmatrose |
+| 14 | Bootsmann |
+| 18 | Steuermann |
+| 22 | Zweiter Offizier |
+| 26 | Erster Offizier |
+| 30 | Kapitän |
+| 35 | Konteradmiral |
+| 40 | Admiral |
+
+Kapitän markiert die Prüfungsreife, die beiden Admiralsränge belohnen das Weiterüben. Die Level-Grenzen sind vorläufig und werden an die XP-Kurve aus AP6 angepasst.
 
 **IAPP (später)**
 
@@ -152,3 +175,17 @@ Nach Freigabe dieses Lastenhefts folgt der Projektplan mit Meilensteinen je Engi
 - [ ] Welches Tagesziel ist realistisch: eine Runde oder zwei? Antwort: Ein, aber man sollte mehr machen dürfen.
 - [ ] Gibt es zu den SKS-Freitextfragen eine amtliche Musterantwort, oder ist das Kursbuch die Quelle? Davon hängt die Kennzeichnung der Herkunft ab. Antwort: Wir starten nur mit den amtlichen, Buch ist bestellt. Also sollte vor Endabnahme noch eingearbeitet werden.
 - [ ] KI-Bewertung (F-31): Welcher Proxy, welche Kosten, und lohnt sich der Aufwand erst nach Version 1? Antwort: Primär mal alles für mich.
+- [x] Rangfolge im SKS-Modul: wie viele Ränge, ab welchem Level, welche Bilder?
+
+## Nachträge während der Umsetzung
+
+Diese Anforderungen sind erst während der Umsetzung entstanden und wurden nachträglich aufgenommen. In der Anforderungstabelle sind sie mit „(Nachtrag)“ markiert.
+
+| Datum | ID | Nachtrag | Anlass |
+| --- | --- | --- | --- |
+| 14.11.2026 | F-33 | Enter bestätigt die Freitexteingabe | Bei der Nutzung der Freitexteingabe aufgefallen |
+| 14.11.2026 | F-34 | Freitext-Antworten speichern und exportieren | Grundlage für eine spätere Schwächenanalyse; nicht gespeicherte Antworten fehlen später |
+| 14.11.2026 | F-35 | KI-Auswertung der Freitext-Antworten | Idee für später, nicht Teil von Version 1 |
+| 14.11.2026 | F-36 | Ränge mit kleinem Bild je Level | Wunsch während der Umsetzung, ergänzt die Level (F-14) |
+| 14.11.2026 | F-37 | Ränge im Inhaltsmodul statt in der Engine | Ränge sollen je Modul verschieden sein: SKS nautisch, andere Module eigene |
+| 14.11.2026 | F-36 | Platzhalter statt Rangbilder in Version 1 | Eigene Bilder brauchen Zeit und kommen später |

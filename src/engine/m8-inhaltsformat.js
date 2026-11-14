@@ -7,8 +7,15 @@
 //     "meta":   { "id", "titel", "sprache", "version", "stand" (JJJJ-MM-TT),
 //                 optional "herkunft", "quelle", "hinweis" },
 //     "themen": [ { "id", "titel", optional "beschreibung" } ],
-//     "fragen": [ Frage, … ]
+//     "fragen": [ Frage, … ],
+//     optional "raenge": [ { "ab", "name", optional "bild" } ]       (F-36, F-37)
 //   }
+//
+// Ränge (F-37): Das Inhaltsmodul legt fest, welcher Rang ab welchem Level gilt; die
+//   Engine kennt keine Rangnamen. "ab" ist eine ganze Zahl, der erste Rang beginnt bei
+//   Level 1 (so hat jedes Level einen Rang), danach steigt "ab" streng an. "bild" ist
+//   ein Pfad relativ zur App (z. B. "content/sks/raenge/matrose.svg"); fehlt das Feld
+//   oder lässt sich das Bild nicht laden, zeigt die App einen Platzhalter.
 //
 // Jede Frage (F-25): "id" (beginnt mit <meta.id>-), "thema", "typ", "frage",
 //   "erklaerung" (Text, darf leer sein), "quelle", optional "hinweis".
@@ -253,6 +260,8 @@ export function pruefeModul(daten, zeilen = new Map()) {
     });
   }
 
+  if (daten.raenge !== undefined) pruefeRaenge(daten.raenge, { melde });
+
   // fragen
   if (!Array.isArray(daten.fragen)) {
     melde('modul.fragenFehlen', 'fragen', modulOrt);
@@ -269,6 +278,28 @@ export function pruefeModul(daten, zeilen = new Map()) {
   }
 
   return fehler;
+}
+
+function pruefeRaenge(raenge, { melde }) {
+  const modulOrt = { art: 'modul' };
+  if (!Array.isArray(raenge)) { melde('inhalt.keineListe', 'raenge', modulOrt, { feld: 'raenge' }); return; }
+  if (raenge.length < 1) { melde('inhalt.zuWenige', 'raenge', modulOrt, { feld: 'raenge', min: 1 }); return; }
+  let vorher = null;
+  raenge.forEach((rang, i) => {
+    const pfad = `raenge.${i}`;
+    const ort = { art: 'rang', nr: i + 1 };
+    if (!istObjekt(rang)) { melde('inhalt.keinObjekt', pfad, ort, { feld: 'raenge' }); vorher = null; return; }
+    if (!istText(rang.name)) melde('inhalt.keinText', `${pfad}.name`, ort, { feld: 'name' });
+    if (rang.bild !== undefined && !istText(rang.bild)) melde('inhalt.keinText', `${pfad}.bild`, ort, { feld: 'bild' });
+    if (!Number.isInteger(rang.ab) || rang.ab < 1) {
+      melde('inhalt.rangAbUngueltig', `${pfad}.ab`, ort);
+      vorher = null;
+      return;
+    }
+    if (i === 0 && rang.ab !== 1) melde('inhalt.rangErstesAb', `${pfad}.ab`, ort);
+    if (vorher !== null && rang.ab <= vorher) melde('inhalt.rangAbSteigend', `${pfad}.ab`, ort, { ab: rang.ab, vorher });
+    vorher = rang.ab;
+  });
 }
 
 function pruefeFrage(frage, pfad, ort, k) {

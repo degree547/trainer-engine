@@ -6,10 +6,11 @@ import {
   neuerLernstand, bewerte, bildeRunde, bildeVorgezogeneRunde, lernUebersicht, datumVon,
 } from './engine/m2-lernlogik.js';
 import {
-  neuesProfil, vergibAntwort, schliesseRundeAb, setzeTagesziel, fortschritt, startHinweis,
+  neuesProfil, vergibAntwort, schliesseRundeAb, setzeTagesziel, fortschritt as profilFortschritt, startHinweis,
+  rangVon, aufstiegVon,
 } from './engine/m4-gamification.js';
 import {
-  oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler,
+  oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, freitextEintrag,
 } from './engine/m7-speicherung.js';
 import { ladeTexte, t } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
@@ -75,6 +76,20 @@ function aendereProfil(aenderung) {
   return ergebnis;
 }
 
+/** Kennzahlen aus M4, dazu der Rang aus dem geladenen Modul (F-36, F-37). */
+function fortschritt(profil, tag) {
+  const f = profilFortschritt(profil, tag);
+  return { ...f, rang: rangVon(zustand.modul?.raenge, f.level.level) };
+}
+
+/** Speichert eine getippte Freitext-Antwort mit Selbstbewertung (F-34). */
+function speichereFreitext(frage, text, gewusst, modus) {
+  const { speicher, modul } = zustand;
+  if (!speicher || !modul) return;
+  speicher.speichereAntwort(freitextEintrag({ modul: modul.meta.id, frage: frage.id, text, gewusst, modus }))
+    .catch((fehler) => { zustand.speicherFehler = speicherCode(fehler, 'speicher.schreibfehler'); });
+}
+
 function zurStartseite() {
   const { modul, fehler, dateiname, lernstand } = zustand;
   zeigeStart(hauptbereich, {
@@ -105,14 +120,18 @@ function starteRunde(modus) {
     modus,
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
-    onBewertung: (frage, richtig, uebung, rundenModus) => {
+    onBewertung: (frage, richtig, uebung, rundenModus, antwort) => {
       zustand.lernstand = bewerte(zustand.lernstand, frage.id, richtig, heute(), { uebung });
       speichere();
+      if (frage.typ === 'freitext') speichereFreitext(frage, antwort, richtig, rundenModus);
       return aendereProfil((profil) => vergibAntwort(profil, { richtig, modus: rundenModus }, heute())).xp;
     },
     onRundenende: (runde) => {
       const { zaehlt, bonus } = aendereProfil((profil) => schliesseRundeAb(profil, runde, heute()));
-      return { zaehlt, bonus, fortschritt: fortschritt(zustand.profil, heute()), hinweis: startHinweis(zustand.profil, heute()) };
+      const f = fortschritt(zustand.profil, heute());
+      // XP vor der Runde: so zeigt das Rundenende einen Rang, der in dieser Runde erreicht wurde.
+      const aufstieg = aufstiegVon(Math.max(f.xp - runde.xp - bonus, 0), f.xp, modul.raenge);
+      return { zaehlt, bonus, fortschritt: f, hinweis: startHinweis(zustand.profil, heute()), aufstieg };
     },
     holeFaecher: () => lernUebersicht(modul, zustand.lernstand, heute()).faecher,
     onFertig: zurStartseite,

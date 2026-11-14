@@ -32,6 +32,56 @@
       "titel": "Seemannschaft II (Antriebsmaschine)"
     }
   ],
+  "raenge": [
+    {
+      "ab": 1,
+      "name": "Süßwassermatrose"
+    },
+    {
+      "ab": 3,
+      "name": "Schiffsjunge"
+    },
+    {
+      "ab": 5,
+      "name": "Leichtmatrose"
+    },
+    {
+      "ab": 8,
+      "name": "Matrose"
+    },
+    {
+      "ab": 11,
+      "name": "Vollmatrose"
+    },
+    {
+      "ab": 14,
+      "name": "Bootsmann"
+    },
+    {
+      "ab": 18,
+      "name": "Steuermann"
+    },
+    {
+      "ab": 22,
+      "name": "Zweiter Offizier"
+    },
+    {
+      "ab": 26,
+      "name": "Erster Offizier"
+    },
+    {
+      "ab": 30,
+      "name": "Kapitän"
+    },
+    {
+      "ab": 35,
+      "name": "Konteradmiral"
+    },
+    {
+      "ab": 40,
+      "name": "Admiral"
+    }
+  ],
   "fragen": [
     {
       "id": "sks-nav-001",

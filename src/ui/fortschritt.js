@@ -1,4 +1,4 @@
-// Anzeigen für XP, Level, Streak und Tagesziel (M4), gemeinsam für Startseite und Rundenende.
+// Anzeigen für XP, Level, Rang, Streak und Tagesziel (M4), gemeinsam für Startseite und Rundenende.
 
 import { t, tn } from './i18n.js';
 import { el } from './dom.js';
@@ -10,10 +10,46 @@ export function hinweistext({ code, werte }) {
   return tn(code, anzahl, werte);
 }
 
-/** Level mit Fortschrittsbalken (F-14). */
-export function levelbalken(level) {
+/**
+ * Bild eines Rangs (F-36). Ohne Bild oder wenn es sich nicht laden lässt: Platzhalter
+ * mit dem Anfangsbuchstaben des Rangs.
+ */
+export function rangbild(rang, gross = false) {
+  const klasse = `rangbild${gross ? ' gross' : ''}`;
+  const platzhalter = () => el('span', { class: `${klasse} platzhalter`, 'aria-hidden': 'true' },
+    rang.name.trim().charAt(0).toUpperCase());
+  if (!rang.bild) return platzhalter();
+  const bild = el('img', { class: klasse, src: rang.bild, alt: '', width: gross ? '64' : '40', height: gross ? '64' : '40' });
+  bild.addEventListener('error', () => bild.replaceWith(platzhalter()), { once: true });
+  return bild;
+}
+
+/** Rang mit Bild und Namen, darunter der nächste Rang (F-36). */
+function rangzeile(rang) {
+  return el('div', { class: 'rang' },
+    rangbild(rang),
+    el('p', {},
+      el('span', { class: 'etikett' }, t('rang.titel')),
+      el('strong', { class: 'rangname' }, rang.name),
+      rang.naechster
+        ? el('span', { class: 'leise' }, t('rang.naechster', { rang: rang.naechster.name, level: rang.naechster.ab }))
+        : el('span', { class: 'leise' }, t('rang.hoechster'))));
+}
+
+/** Hervorgehobener Hinweis am Rundenende, wenn ein neuer Rang erreicht ist (F-36). */
+export function rangaufstieg(rang) {
+  return el('div', { class: 'rangaufstieg', role: 'status' },
+    rangbild(rang, true),
+    el('p', {},
+      el('span', { class: 'etikett' }, t('rang.aufstieg')),
+      el('strong', { class: 'rangname' }, rang.name)));
+}
+
+/** Level mit Fortschrittsbalken (F-14), davor der Rang, wenn das Modul Ränge hat (F-36). */
+export function levelbalken(level, rang = null) {
   const rest = level.fuerNaechstes - level.imLevel;
   return el('div', { class: 'level' },
+    rang ? rangzeile(rang) : null,
     el('p', { class: 'levelzeile' },
       el('strong', {}, t('fortschritt.level', { level: level.level })),
       el('span', { class: 'leise' }, t('fortschritt.bisLevel', { rest, naechstes: level.level + 1 }))),

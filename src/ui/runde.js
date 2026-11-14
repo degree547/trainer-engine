@@ -2,10 +2,11 @@
 // Multiple Choice (F-08): Option antippen, die App bewertet selbst.
 // Freitext (F-29, F-30): Antwort tippen, Musterantwort mit Herkunft sehen,
 // Kernpunkte abhaken, selbst bewerten. Die Regeln stehen in M3.
+// Enter schickt die Freitext-Antwort ab, Shift+Enter macht einen Zeilenumbruch (F-33).
 
 import { t } from './i18n.js';
 import { el } from './dom.js';
-import { hinweistext, levelbalken } from './fortschritt.js';
+import { hinweistext, levelbalken, rangaufstieg } from './fortschritt.js';
 import {
   optionsReihenfolge, buchstabe, bewerteMc, istLeer, freitextVorschlag, herkunftVon,
 } from '../engine/m3-fragetypen.js';
@@ -17,9 +18,10 @@ import {
  *   modus: 'normal' | 'vorziehen' | 'fehler',
  *   modul: object,
  *   themenTitel: Map<string, string>,
- *   onBewertung: (frage: object, richtig: boolean, uebung: boolean, modus: string) => number,
- *   onRundenende?: (runde: {modus: string, beantwortet: number, gesamt: number, fehler: number}) =>
- *     {zaehlt: boolean, bonus: number, fortschritt: object, hinweis: object},
+ *   onBewertung: (frage: object, richtig: boolean, uebung: boolean, modus: string, antwort?: string) => number,
+ *     antwort: bei Freitext der getippte Text (F-34)
+ *   onRundenende?: (runde: {modus: string, beantwortet: number, gesamt: number, fehler: number, xp: number}) =>
+ *     {zaehlt: boolean, bonus: number, fortschritt: object, hinweis: object, aufstieg?: object},
  *   holeFaecher: () => number[],
  *   onFertig: () => void,
  * }} runde
@@ -51,7 +53,8 @@ export function zeigeRunde(ziel, runde) {
 
   function bewerteUndWeiter(richtig) {
     const frage = runde.fragen[nr];
-    rundenXp += runde.onBewertung(frage, richtig, uebung, runde.modus) ?? 0;
+    const text = frage.typ === 'freitext' ? antwort : undefined;
+    rundenXp += runde.onBewertung(frage, richtig, uebung, runde.modus, text) ?? 0;
     ergebnisse.push({ frage, richtig });
     nr += 1;
     if (nr < runde.fragen.length) neueFrage();
@@ -148,7 +151,15 @@ export function zeigeRunde(ziel, runde) {
     const feld = el('textarea', {
       id: 'antwort', class: 'antwortfeld', rows: '5',
       'aria-label': t('freitext.eingabeLabel'), placeholder: t('freitext.platzhalter'),
-      autocomplete: 'off', spellcheck: 'true',
+      autocomplete: 'off', spellcheck: 'true', enterkeyhint: 'send',
+      onkeydown: (e) => {
+        // F-33: Enter schickt ab, Shift+Enter bricht die Zeile um. Während einer
+        // Wortauswahl der Tastatur (isComposing) gehört Enter noch zur Eingabe.
+        if (e.key !== 'Enter' || e.shiftKey || e.isComposing || e.keyCode === 229) return;
+        e.preventDefault();
+        antwort = e.target.value;
+        pruefeAntwort();
+      },
       oninput: (e) => {
         antwort = e.target.value;
         if (leerNachfragen && !istLeer(antwort)) {
@@ -167,7 +178,12 @@ export function zeigeRunde(ziel, runde) {
   }
 
   function pruefeAntwort() {
-    if (istLeer(antwort) && !leerNachfragen) { leerNachfragen = true; zeichneFrage(); return; }
+    if (istLeer(antwort) && !leerNachfragen) {
+      leerNachfragen = true;
+      zeichneFrage();
+      ziel.querySelector('#antwort')?.focus(); // Tastatur bleibt offen, zweites Enter löst auf
+      return;
+    }
     aufgedeckt = true;
     zeichneFrage();
   }
@@ -258,6 +274,7 @@ export function zeigeRunde(ziel, runde) {
     if (!abschluss && ergebnisse.length > 0 && runde.onRundenende) {
       abschluss = runde.onRundenende({
         modus: runde.modus, beantwortet: ergebnisse.length, gesamt: runde.fragen.length, fehler: fehler.length,
+        xp: rundenXp,
       });
     }
 
@@ -273,14 +290,15 @@ export function zeigeRunde(ziel, runde) {
       faecherleiste(faecher),
     );
 
-    // XP, Streak und Level am Rundenende (F-15).
+    // XP, Streak und Level am Rundenende (F-15), dazu ein neuer Rang (F-36).
     const belohnung = abschluss ? el('section', { class: 'karte belohnung' },
       el('p', { class: 'etikett' }, t('fortschritt.titel')),
+      abschluss.aufstieg?.rang ? rangaufstieg(abschluss.aufstieg.rang) : null,
       el('p', { class: 'xp' }, t('auswertung.xp', { xp: rundenXp + abschluss.bonus })),
       abschluss.bonus > 0 ? el('p', { class: 'hinweis oben' }, t('auswertung.bonus', { bonus: abschluss.bonus })) : null,
       !abschluss.zaehlt && runde.modus !== 'fehler' ? el('p', { class: 'hinweis' }, t('auswertung.zaehltNicht')) : null,
       el('p', { class: `erinnerung${abschluss.fortschritt.streak.heuteErreicht ? ' erreicht' : ''}` }, hinweistext(abschluss.hinweis)),
-      levelbalken(abschluss.fortschritt.level),
+      levelbalken(abschluss.fortschritt.level, abschluss.fortschritt.rang),
     ) : null;
 
     const aktionen = el('div', { class: 'aktionen' });

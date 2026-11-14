@@ -29,6 +29,7 @@
   "fehler.ortThemaId": "Topic {nr} ({id})",
   "fehler.ortFrage": "Question {nr}",
   "fehler.ortFrageId": "Question {nr} ({id})",
+  "fehler.ortRang": "Rank {nr}",
   "fehler.weitere": "… and {anzahl} more errors.",
   "json.unerwartetesEnde": "The file ends in the middle of the content – probably a closing bracket or quotation mark is missing.",
   "json.erwartet": "Expected “{erwartet}” here, found “{zeichen}”.",
@@ -54,6 +55,9 @@
   "inhalt.wertNichtErlaubt": "“{feld}” has the value “{wert}”. Allowed: {erlaubt}.",
   "inhalt.richtigAusserhalb": "“richtig” must be the number of an option (0 to {max}).",
   "inhalt.datumUngueltig": "“{feld}” must be a date in the format YYYY-MM-DD.",
+  "inhalt.rangAbUngueltig": "“ab” must be a whole number of at least 1 (the level from which the rank applies).",
+  "inhalt.rangErstesAb": "The first rank must start at level 1 (“ab”: 1) so that every level has a rank.",
+  "inhalt.rangAbSteigend": "“ab” must be greater than for the previous rank (here {ab}, before {vorher}).",
   "json.kommaFehlt": "A comma or the closing bracket “{klammer}” is missing here (found: “{zeichen}”).",
   "lernen.titel": "Study today",
   "lernen.bereit": "Ready for the next round",
@@ -138,5 +142,9 @@
   "auswertung.trefferquote": "Accuracy: {prozent}%",
   "auswertung.xp": "+{xp} XP",
   "auswertung.bonus": "Including a {bonus} XP bonus for a round without mistakes.",
-  "auswertung.zaehltNicht": "Ended early: this round does not count towards the daily goal, but you keep the XP."
+  "auswertung.zaehltNicht": "Ended early: this round does not count towards the daily goal, but you keep the XP.",
+  "rang.titel": "Rank",
+  "rang.naechster": "next rank: {rang} from level {level}",
+  "rang.hoechster": "highest rank reached",
+  "rang.aufstieg": "New rank reached"
 }

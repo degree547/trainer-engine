@@ -29,6 +29,7 @@
   "fehler.ortThemaId": "Thema {nr} ({id})",
   "fehler.ortFrage": "Frage {nr}",
   "fehler.ortFrageId": "Frage {nr} ({id})",
+  "fehler.ortRang": "Rang {nr}",
   "fehler.weitere": "… und {anzahl} weitere Fehler.",
   "json.unerwartetesEnde": "Die Datei endet mitten im Inhalt – vermutlich fehlt eine schließende Klammer oder ein Anführungszeichen.",
   "json.erwartet": "Hier wurde „{erwartet}“ erwartet, gefunden wurde „{zeichen}“.",
@@ -54,6 +55,9 @@
   "inhalt.wertNichtErlaubt": "„{feld}“ hat den Wert „{wert}“. Erlaubt: {erlaubt}.",
   "inhalt.richtigAusserhalb": "„richtig“ muss die Nummer einer Option sein (0 bis {max}).",
   "inhalt.datumUngueltig": "„{feld}“ muss ein Datum im Format JJJJ-MM-TT sein.",
+  "inhalt.rangAbUngueltig": "„ab“ muss eine ganze Zahl ab 1 sein (das Level, ab dem der Rang gilt).",
+  "inhalt.rangErstesAb": "Der erste Rang muss bei Level 1 beginnen („ab“: 1), damit jedes Level einen Rang hat.",
+  "inhalt.rangAbSteigend": "„ab“ muss größer sein als beim Rang davor (hier {ab}, davor {vorher}).",
   "json.kommaFehlt": "Hier fehlt ein Komma oder die schließende Klammer „{klammer}“ (gefunden: „{zeichen}“).",
   "lernen.titel": "Heute lernen",
   "lernen.bereit": "Bereit für die nächste Runde",
@@ -138,5 +142,9 @@
   "auswertung.trefferquote": "Trefferquote: {prozent} %",
   "auswertung.xp": "+{xp} XP",
   "auswertung.bonus": "Darin {bonus} XP Bonus für die Runde ohne Fehler.",
-  "auswertung.zaehltNicht": "Vorzeitig beendet: Die Runde zählt nicht für das Tagesziel, die XP bleiben."
+  "auswertung.zaehltNicht": "Vorzeitig beendet: Die Runde zählt nicht für das Tagesziel, die XP bleiben.",
+  "rang.titel": "Rang",
+  "rang.naechster": "nächster Rang: {rang} ab Level {level}",
+  "rang.hoechster": "höchster Rang erreicht",
+  "rang.aufstieg": "Neuer Rang erreicht"
 }
