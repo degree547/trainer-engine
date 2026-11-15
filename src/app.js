@@ -14,10 +14,12 @@ import {
   pruefeSicherung, dateinameSicherung,
 } from './engine/m7-speicherung.js';
 import { fortschrittJeThema, schwaechenliste } from './engine/m5-statistik.js';
+import { pruefungsregeln, bildePruefbogen } from './engine/m6-pruefung.js';
 import { ladeTexte, t, bevorzugteSprache, merkeSprache, sprache } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
 import { zeigeRunde } from './ui/runde.js';
 import { zeigeStatistik } from './ui/statistik.js';
+import { zeigePruefung } from './ui/pruefung.js';
 
 // Welches Inhaltsmodul beim Start geladen wird (amtlicher SKS-Katalog, AP2).
 const STANDARDMODUL = 'content/sks/sks.json';
@@ -153,6 +155,7 @@ function zurStartseite() {
     onRunde: () => starteRunde('normal'),
     onVorziehen: () => starteRunde('vorziehen'),
     onStatistik: zurStatistik,
+    onSimulation: modul && pruefungsregeln(modul) ? zurPruefung : null,
     einstellungen: {
       sprache: sprache(),
       onSprache: wechsleSprache,
@@ -241,11 +244,30 @@ function zurStatistik() {
   });
 }
 
-function starteRunde(modus) {
+/**
+ * Prüfungssimulation (M6, F-20). Sie ändert weder Leitner-Fächer noch XP oder Tagesziel;
+ * erst das anschließende Üben der Fehler wirkt wie „Fehler gleich wiederholen“.
+ */
+function zurPruefung() {
+  const { modul } = zustand;
+  zeigePruefung(hauptbereich, {
+    modul,
+    regeln: pruefungsregeln(modul),
+    bildeBogen: () => bildePruefbogen(modul),
+    onZurueck: zurStartseite,
+    onFehlerUeben: (fragen) => starteRunde('fehler', fragen),
+  });
+}
+
+/**
+ * @param {'normal'|'vorziehen'|'fehler'} modus
+ * @param {object[]} [fragen] feste Fragen (nur für „fehler“ nach der Prüfungssimulation)
+ */
+function starteRunde(modus, fragen) {
   const { modul } = zustand;
   const bilde = modus === 'vorziehen' ? bildeVorgezogeneRunde : bildeRunde;
   zeigeRunde(hauptbereich, {
-    fragen: bilde(modul, zustand.lernstand, heute(), { thema: zustand.thema }),
+    fragen: fragen ?? bilde(modul, zustand.lernstand, heute(), { thema: zustand.thema }),
     modus,
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),

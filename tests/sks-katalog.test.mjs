@@ -83,3 +83,15 @@ test('Neu-Import aus dem PDF ergibt dieselbe Moduldatei', { skip: !pdftotext && 
   // Zeilenenden angleichen: Git kann die Datei unter Windows mit CRLF auschecken.
   assert.equal(JSON.stringify(neu, null, 2) + '\n', text.replace(/\r\n/g, '\n'));
 });
+
+test('SKS-Modul hat eine Prüfungssimulation mit vorläufigen Werten (F-20)', async () => {
+  const { pruefungsregeln, bildePruefbogen } = await import('../src/engine/m6-pruefung.js');
+  const r = pruefungsregeln(modul);
+  assert.equal(r.fragen, 30);
+  assert.equal(r.minuten, 90);
+  assert.equal(r.maxPunkte, 60);
+  assert.equal(r.bestehenAb, 39);
+  assert.deepEqual(r.verteilung.map((v) => v.thema), modul.themen.map((thema) => thema.id));
+  assert.match(r.hinweis, /^Vorläufig/);
+  assert.equal(bildePruefbogen(modul).length, 30);
+});

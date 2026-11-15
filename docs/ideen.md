@@ -13,3 +13,6 @@ Hier landen Einfälle, die nicht zum laufenden AP gehören. Sie werden nicht sof
 | 14.11.2026 | Gespeicherte Freitext-Antworten in der App ansehen (Liste je Frage), z. B. um die eigene Entwicklung zu sehen; bisher nur gespeichert, nicht angezeigt | AP6A | AP7 oder nach Version 1 |
 | 14.11.2026 | Sicherung über das Teilen-Menü des Smartphones speichern (Web Share API), damit die Datei direkt in Proton Drive o. Ä. landet statt im Download-Ordner | AP8 | nach Version 1 |
 | 14.11.2026 | Hinweis beim Start, wenn die letzte Sicherung länger als 7 Tage zurückliegt (Risiko „Datenverlust im Browser“) | AP8 | nach Version 1 oder bei Bedarf |
+| 15.11.2026 | Ergebnisse der Prüfungssimulation speichern (Datum, Punkte, je Thema) und als Verlauf in der Statistik zeigen, auch in der Sicherung; bisher nur angezeigt und nicht gespeichert | AP10 | nach Version 1 |
+| 15.11.2026 | Teilpunkte bei Freitext in der Simulation nach Anteil der abgehakten Kernpunkte, falls die echte Prüfung Teilpunkte vergibt | AP10 | nach Abgleich der Prüfungsordnung |
+| 15.11.2026 | Laufende Simulation überlebt Neuladen oder Schließen der App (derzeit geht sie dabei verloren) | AP10 | nach Version 1 |

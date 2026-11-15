@@ -9,7 +9,16 @@
 //     "themen": [ { "id", "titel", optional "beschreibung" } ],
 //     "fragen": [ Frage, … ],
 //     optional "raenge": [ { "ab", "name", optional "bild" } ]       (F-36, F-37)
+//     optional "pruefung": { "fragen": { <thema-id>: Anzahl, … }, "minuten",
+//                            optional "punkteJeFrage" (Standard 1), "bestehenAb",
+//                            optional "hinweis" }                     (F-20)
 //   }
+//
+// Prüfungssimulation (F-20): Das Inhaltsmodul legt fest, wie viele Fragen je Thema eine
+//   Simulation hat, wie viele Minuten sie dauert, wie viele Punkte eine Frage bringt und ab
+//   wie vielen Punkten sie bestanden ist. Alle Zahlen sind ganze Zahlen ab 1; je Thema darf
+//   nicht mehr verlangt werden, als es Fragen gibt; "bestehenAb" liegt höchstens bei der
+//   Höchstpunktzahl. "hinweis" erscheint vor dem Start (z. B. „Werte vorläufig“).
 //
 // Ränge (F-37): Das Inhaltsmodul legt fest, welcher Rang ab welchem Level gilt; die
 //   Engine kennt keine Rangnamen. "ab" ist eine ganze Zahl, der erste Rang beginnt bei
@@ -277,7 +286,48 @@ export function pruefeModul(daten, zeilen = new Map()) {
     });
   }
 
+  if (daten.pruefung !== undefined) {
+    pruefePruefung(daten.pruefung, { melde, themenIds, fragen: Array.isArray(daten.fragen) ? daten.fragen : [] });
+  }
+
   return fehler;
+}
+
+const istGanzeZahl = (w, min) => Number.isInteger(w) && w >= min;
+
+function pruefePruefung(pruefung, { melde, themenIds, fragen }) {
+  const ort = { art: 'pruefung' };
+  if (!istObjekt(pruefung)) { melde('inhalt.pruefungKeinObjekt', 'pruefung', ort); return; }
+
+  let gesamt = 0;
+  let anzahlOk = true;
+  const verteilung = pruefung.fragen;
+  if (!istObjekt(verteilung) || Object.keys(verteilung).length === 0) {
+    melde('inhalt.pruefungKeineFragen', 'pruefung.fragen', ort);
+    anzahlOk = false;
+  } else {
+    for (const [thema, anzahl] of Object.entries(verteilung)) {
+      const pfad = `pruefung.fragen.${thema}`;
+      if (!themenIds.has(thema)) { melde('inhalt.themaUnbekannt', pfad, ort, { wert: thema }); anzahlOk = false; continue; }
+      if (!istGanzeZahl(anzahl, 1)) { melde('inhalt.ganzeZahl', pfad, ort, { feld: thema, min: 1 }); anzahlOk = false; continue; }
+      const vorhanden = fragen.filter((f) => istObjekt(f) && f.thema === thema).length;
+      if (anzahl > vorhanden) melde('inhalt.pruefungZuVieleFragen', pfad, ort, { thema, anzahl, vorhanden });
+      gesamt += anzahl;
+    }
+  }
+
+  if (!istGanzeZahl(pruefung.minuten, 1)) melde('inhalt.ganzeZahl', 'pruefung.minuten', ort, { feld: 'minuten', min: 1 });
+  const punkte = pruefung.punkteJeFrage ?? 1;
+  const punkteOk = istGanzeZahl(punkte, 1);
+  if (!punkteOk) melde('inhalt.ganzeZahl', 'pruefung.punkteJeFrage', ort, { feld: 'punkteJeFrage', min: 1 });
+  if (!istGanzeZahl(pruefung.bestehenAb, 1)) {
+    melde('inhalt.ganzeZahl', 'pruefung.bestehenAb', ort, { feld: 'bestehenAb', min: 1 });
+  } else if (anzahlOk && punkteOk && pruefung.bestehenAb > gesamt * punkte) {
+    melde('inhalt.pruefungGrenze', 'pruefung.bestehenAb', ort, { wert: pruefung.bestehenAb, max: gesamt * punkte });
+  }
+  if (pruefung.hinweis !== undefined && typeof pruefung.hinweis !== 'string') {
+    melde('inhalt.keinText', 'pruefung.hinweis', ort, { feld: 'hinweis' });
+  }
 }
 
 function pruefeRaenge(raenge, { melde }) {

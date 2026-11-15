@@ -134,3 +134,35 @@ test('M1 lädt nur Module, die M8 für gültig hält', () => {
     e.code === 'modul.keinJson' && e.details.zeile === 3 && e.details.fehler[0].code === 'json.schluesselErwartet');
   assert.equal(leseModul(JSON.stringify(modul())).meta.id, 't');
 });
+
+test('Prüfungssimulation (F-20): gültige Regeln werden angenommen', () => {
+  const fragen = [freitext(1), freitext(2), mc(3)];
+  assert.deepEqual(pruefeModul(modul(fragen, { pruefung: { fragen: { 't-a': 3 }, minuten: 10, bestehenAb: 2 } })), []);
+  assert.deepEqual(pruefeModul(modul(fragen, {
+    pruefung: { fragen: { 't-a': 2 }, minuten: 10, punkteJeFrage: 2, bestehenAb: 4, hinweis: '' },
+  })), []);
+});
+
+test('Prüfungssimulation (F-20): Fehler mit Zeile und Klartext', () => {
+  const fragen = [freitext(1), freitext(2)];
+  const fall = (pruefung) => codes(pruefeModul(modul(fragen, { pruefung })));
+  assert.deepEqual(fall([]), ['inhalt.pruefungKeinObjekt']);
+  assert.deepEqual(fall({ minuten: 10, bestehenAb: 1 }), ['inhalt.pruefungKeineFragen']);
+  assert.deepEqual(fall({ fragen: {}, minuten: 10, bestehenAb: 1 }), ['inhalt.pruefungKeineFragen']);
+  assert.deepEqual(fall({ fragen: { 't-x': 1 }, minuten: 10, bestehenAb: 1 }), ['inhalt.themaUnbekannt']);
+  assert.deepEqual(fall({ fragen: { 't-a': 0 }, minuten: 10, bestehenAb: 1 }), ['inhalt.ganzeZahl']);
+  assert.deepEqual(fall({ fragen: { 't-a': 3 }, minuten: 10, bestehenAb: 1 }), ['inhalt.pruefungZuVieleFragen']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 0, bestehenAb: 1 }), ['inhalt.ganzeZahl']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 1.5, bestehenAb: 1 }), ['inhalt.ganzeZahl']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 10, punkteJeFrage: '2', bestehenAb: 1 }), ['inhalt.ganzeZahl']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 10 }), ['inhalt.ganzeZahl']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 10, punkteJeFrage: 2, bestehenAb: 5 }), ['inhalt.pruefungGrenze']);
+  assert.deepEqual(fall({ fragen: { 't-a': 2 }, minuten: 10, bestehenAb: 1, hinweis: 3 }), ['inhalt.keinText']);
+
+  const text = JSON.stringify(modul(fragen, { pruefung: { fragen: { 't-a': 5 }, minuten: 10, bestehenAb: 1 } }), null, 2);
+  const { fehler } = lesePruefe(text);
+  assert.equal(fehler.length, 1);
+  assert.deepEqual(fehler[0].ort, { art: 'pruefung' });
+  assert.deepEqual(fehler[0].werte, { thema: 't-a', anzahl: 5, vorhanden: 2 });
+  assert.equal(text.split('\n')[fehler[0].zeile - 1].trim(), '"t-a": 5');
+});

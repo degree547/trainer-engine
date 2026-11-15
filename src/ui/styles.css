@@ -288,3 +288,20 @@ main {
 /* Einstellungen und Datensicherung (AP8) */
 .aktionen.sicherung { margin-top: 1rem; }
 .hinweis.erfolg { color: var(--ok); }
+
+/* Prüfungssimulation (AP10, F-20) */
+.uhr {
+  margin: 0; font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: var(--akzent);
+}
+.uhr.knapp { color: var(--fehler); }
+.option.gewaehlt { border-color: var(--akzent); background: color-mix(in srgb, var(--akzent) 12%, var(--flaeche)); }
+.option.gewaehlt .buchstabe { background: var(--akzent); color: var(--akzent-text); }
+.knopf:disabled { opacity: 0.4; cursor: default; }
+.knopf:disabled:active { transform: none; }
+.textknopf.mitte { align-self: center; }
+.ergebnis.bestanden { border-color: var(--ok); }
+.ergebnis.bestanden h2 { color: var(--ok); }
+.ergebnis.durchgefallen { border-color: var(--fehler); }
+.ergebnis.durchgefallen h2 { color: var(--fehler); }
+.ergebnis .punkte { margin: 0; font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -16,6 +16,7 @@ function ortstext(f) {
   if (ort.art === 'thema') teile.push(t(ort.id ? 'fehler.ortThemaId' : 'fehler.ortThema', ort));
   if (ort.art === 'frage') teile.push(t(ort.id ? 'fehler.ortFrageId' : 'fehler.ortFrage', ort));
   if (ort.art === 'rang') teile.push(t('fehler.ortRang', ort));
+  if (ort.art === 'pruefung') teile.push(t('fehler.ortPruefung'));
   return teile.join(' · ');
 }
 
@@ -43,6 +44,7 @@ export function fehlertext(fehler) {
  *          speicherung?: {fehler?: string, dauerhaft?: string, verworfen?: number},
  *          onDatei: (file: File) => void, onStandard: () => void,
  *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void,
+ *          onSimulation?: (() => void)|null,
  *          thema?: string|null, onThema?: (id: string|null) => void, anderswoFaellig?: number,
  *          einstellungen?: object}} zustand
  *   thema: gewähltes Thema (F-06), null = alle; anderswoFaellig: fällige Fragen in den übrigen Themen;
@@ -114,6 +116,9 @@ function lernkarte(lernen, zustand) {
   }
   if (lernen.spaeter > 0) {
     knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onVorziehen }, t('lernen.vorziehen')));
+  }
+  if (zustand.onSimulation) {
+    knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onSimulation }, t('pruefung.titel')));
   }
   if (zustand.onStatistik) {
     knoepfe.append(el('button', { type: 'button', class: 'knopf zweitrangig', onclick: zustand.onStatistik }, t('lernen.statistik')));

@@ -82,6 +82,19 @@
       "name": "Admiral"
     }
   ],
+  "pruefung": {
+    "fragen": {
+      "sks-nav": 5,
+      "sks-recht": 5,
+      "sks-wetter": 5,
+      "sks-sm1": 8,
+      "sks-sm2": 7
+    },
+    "minuten": 90,
+    "punkteJeFrage": 2,
+    "bestehenAb": 39,
+    "hinweis": "Vorläufige Werte: 30 Fragen, 90 Minuten, 2 Punkte je Frage, bestanden ab 39 von 60 Punkten; die Verteilung auf die Bereiche richtet sich nach ihrem Anteil am Katalog. Vor der Prüfung mit der amtlichen Prüfungsordnung (ELWIS) oder dem Kurs abgleichen."
+  },
   "fragen": [
     {
       "id": "sks-nav-001",
