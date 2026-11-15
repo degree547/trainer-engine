@@ -7,7 +7,7 @@
     "version": "1",
     "stand": "2026-11-12",
     "herkunft": "eigen",
-    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01), und enthält je ein Beispiel für Multiple Choice mit gemischten und mit fester Reihenfolge sowie für Freitext (F-08, F-29)."
+    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01), und enthält je ein Beispiel für Multiple Choice mit gemischter und mit fester Reihenfolge, für Freitext (F-08, F-29) und für eine Zahleneingabe mit Toleranz und Einheit (F-09). Dazu ein gesperrter Generator für Rechenaufgaben (F-28), der nicht in Runden erscheint."
   },
   "themen": [
     {
@@ -75,6 +75,44 @@
       "kernpunkteStatus": "geprueft",
       "herkunft": "eigen",
       "erklaerung": "",
+      "quelle": "eigen"
+    },
+    {
+      "id": "beispiel-005",
+      "thema": "beispiel-allgemein",
+      "typ": "zahl",
+      "frage": "Wie viele Minuten hat eine Stunde?",
+      "loesung": 60,
+      "toleranz": 0,
+      "einheit": "min",
+      "herkunft": "eigen",
+      "erklaerung": "Eine Stunde hat 60 Minuten.",
+      "quelle": "eigen"
+    }
+  ],
+  "generatoren": [
+    {
+      "id": "beispiel-gen-strecke",
+      "thema": "beispiel-allgemein",
+      "freigegeben": false,
+      "frage": "Ein Radfahrer fährt {zeit} Stunden lang mit {tempo} km/h. Wie viele Kilometer legt er zurück?",
+      "variablen": {
+        "tempo": {
+          "von": 10,
+          "bis": 25
+        },
+        "zeit": {
+          "von": 0.5,
+          "bis": 4,
+          "schritt": 0.5
+        }
+      },
+      "loesung": "tempo * zeit",
+      "nachkommastellen": 1,
+      "toleranz": 0.1,
+      "einheit": "km",
+      "herkunft": "eigen",
+      "erklaerung": "Strecke = Geschwindigkeit × Zeit: {tempo} km/h × {zeit} h = {loesung} km.",
       "quelle": "eigen"
     }
   ]

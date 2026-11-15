@@ -82,3 +82,8 @@ export function datumstext(datum) {
   const [jahr, monat, tag] = datum.split('-');
   return aktuelleSprache === 'de' ? `${tag}.${monat}.${jahr}` : `${tag}/${monat}/${jahr}`;
 }
+
+/** Zahl in der Schreibweise der Sprache, ohne Tausendertrennzeichen: 12,5 bzw. 12.5. */
+export function zahltext(zahl) {
+  return new Intl.NumberFormat(aktuelleSprache, { maximumFractionDigits: 6, useGrouping: false }).format(zahl);
+}

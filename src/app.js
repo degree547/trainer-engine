@@ -15,7 +15,8 @@ import {
 } from './engine/m7-speicherung.js';
 import { fortschrittJeThema, schwaechenliste } from './engine/m5-statistik.js';
 import { pruefungsregeln, bildePruefbogen } from './engine/m6-pruefung.js';
-import { ladeTexte, t, bevorzugteSprache, merkeSprache, sprache } from './ui/i18n.js';
+import { mitGeneratoren, erneuere } from './engine/m9-generatoren.js';
+import { ladeTexte, t, bevorzugteSprache, merkeSprache, sprache, zahltext } from './ui/i18n.js';
 import { zeigeStart } from './ui/start.js';
 import { zeigeRunde } from './ui/runde.js';
 import { zeigeStatistik } from './ui/statistik.js';
@@ -260,6 +261,14 @@ function zurPruefung() {
 }
 
 /**
+ * Rechenaufgaben aus freigegebenen Generatoren (M9, F-28) kommen wie Fragen ins Modul;
+ * gesperrte Generatoren bleiben draußen. Zu Beginn jeder Runde gibt es neue Zahlenwerte.
+ */
+function mitAufgaben(modul) {
+  return mitGeneratoren(modul, { zahlText: zahltext });
+}
+
+/**
  * @param {'normal'|'vorziehen'|'fehler'} modus
  * @param {object[]} [fragen] feste Fragen (nur für „fehler“ nach der Prüfungssimulation)
  */
@@ -267,7 +276,7 @@ function starteRunde(modus, fragen) {
   const { modul } = zustand;
   const bilde = modus === 'vorziehen' ? bildeVorgezogeneRunde : bildeRunde;
   zeigeRunde(hauptbereich, {
-    fragen: fragen ?? bilde(modul, zustand.lernstand, heute(), { thema: zustand.thema }),
+    fragen: fragen ?? erneuere(bilde(modul, zustand.lernstand, heute(), { thema: zustand.thema }), modul, { zahlText: zahltext }),
     modus,
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
@@ -332,7 +341,7 @@ async function ladeProfil() {
 async function ladeStandard() {
   statuszeile.textContent = t('status.laedt');
   try {
-    Object.assign(zustand, { modul: await ladeModulAusUrl(STANDARDMODUL), fehler: null, dateiname: '' });
+    Object.assign(zustand, { modul: mitAufgaben(await ladeModulAusUrl(STANDARDMODUL)), fehler: null, dateiname: '' });
   } catch (fehler) {
     Object.assign(zustand, { modul: null, fehler, dateiname: '' });
   }
@@ -343,7 +352,7 @@ async function ladeStandard() {
 
 async function ladeDatei(datei) {
   try {
-    Object.assign(zustand, { modul: await ladeModulAusDatei(datei), fehler: null, dateiname: datei.name });
+    Object.assign(zustand, { modul: mitAufgaben(await ladeModulAusDatei(datei)), fehler: null, dateiname: datei.name });
   } catch (fehler) {
     Object.assign(zustand, { modul: null, fehler, dateiname: '' });
   }

@@ -17,8 +17,17 @@
 // - Aus den abgehakten Kernpunkten ergibt sich ein Vorschlag: alle abgehakt = gewusst,
 //   sonst nicht gewusst. Die Entscheidung trifft der Lernende selbst; sie bestimmt
 //   das Leitner-Fach (über M2).
+//
+// Zahleneingabe (F-09):
+// - Getippt wird nur die Zahl; die Einheit steht fest neben dem Feld. Tippt der Lernende
+//   die Einheit trotzdem mit, wird sie ignoriert. Komma und Punkt gelten beide als
+//   Dezimaltrennzeichen, Tausenderpunkte sind nicht erlaubt.
+// - Richtig ist jede Zahl, die höchstens "toleranz" von "loesung" abweicht (Grenze
+//   eingeschlossen). Die Bewertung ist automatisch.
+// - Mit "kreis" (z. B. 360) wird die Abweichung im Kreis gemessen: 359 und 1 liegen
+//   dann 2 auseinander, nicht 358.
 
-export const TYPEN = ['mc', 'freitext'];
+export const TYPEN = ['mc', 'freitext', 'zahl'];
 
 /**
  * Reihenfolge, in der die Optionen einer MC-Frage gezeigt werden.
@@ -74,4 +83,50 @@ export function freitextVorschlag(frage, abgehakt) {
  */
 export function herkunftVon(frage, modul) {
   return frage.herkunft ?? modul?.meta?.herkunft ?? '';
+}
+
+// --- Zahleneingabe (F-09) ---------------------------------------------------
+
+/**
+ * Liest eine getippte Zahl. Komma oder Punkt als Dezimaltrennzeichen, optional mit
+ * Vorzeichen; eine angehängte Einheit (die der Frage oder „°“) wird ignoriert.
+ * @param {string} eingabe
+ * @param {string} [einheit]
+ * @returns {number | null} null, wenn keine Zahl erkennbar ist
+ */
+export function leseZahl(eingabe, einheit = '') {
+  if (typeof eingabe !== 'string') return null;
+  let text = eingabe.trim().replace(/\u2212/g, '-'); // typografisches Minus
+  const einheiten = [einheit, '°'].filter((e) => typeof e === 'string' && e.trim() !== '');
+  for (const e of einheiten) {
+    if (text.toLowerCase().endsWith(e.trim().toLowerCase())) text = text.slice(0, -e.trim().length).trim();
+  }
+  if (!/^[+-]?(\d+([.,]\d*)?|[.,]\d+)$/.test(text)) return null;
+  const zahl = Number(text.replace(',', '.'));
+  return Number.isFinite(zahl) ? zahl : null;
+}
+
+/**
+ * Abweichung einer Zahl von der Lösung; mit "kreis" die kürzere Strecke im Kreis.
+ * @param {{loesung: number, kreis?: number}} frage
+ */
+export function abweichung(frage, zahl) {
+  const diff = Math.abs(zahl - frage.loesung);
+  if (!frage.kreis) return diff;
+  const rest = diff % frage.kreis;
+  return Math.min(rest, frage.kreis - rest);
+}
+
+/**
+ * Bewertet eine Zahlenantwort.
+ * @param {{loesung: number, toleranz: number, einheit?: string, kreis?: number}} frage
+ * @param {string} eingabe getippter Text
+ * @returns {{richtig: boolean, zahl: number | null, abweichung: number | null}}
+ */
+export function bewerteZahl(frage, eingabe) {
+  const zahl = leseZahl(eingabe, frage.einheit);
+  if (zahl === null) return { richtig: false, zahl: null, abweichung: null };
+  const a = abweichung(frage, zahl);
+  // Kleiner Zuschlag gegen Rundungsfehler der Gleitkommazahlen (z. B. 0,1 + 0,2).
+  return { richtig: a <= frage.toleranz + 1e-9, zahl, abweichung: a };
 }

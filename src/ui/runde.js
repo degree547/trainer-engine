@@ -3,13 +3,16 @@
 // Freitext (F-29, F-30): Antwort tippen, Musterantwort mit Herkunft sehen,
 // Kernpunkte abhaken, selbst bewerten. Die Regeln stehen in M3.
 // Enter schickt die Freitext-Antwort ab, Shift+Enter macht einen Zeilenumbruch (F-33).
+// Zahleneingabe (F-09): Zahl tippen, die App bewertet mit Toleranz und zeigt die Lösung.
 
 import { t } from './i18n.js';
 import { el } from './dom.js';
 import { hinweistext, levelbalken, rangaufstieg } from './fortschritt.js';
 import {
   optionsReihenfolge, buchstabe, bewerteMc, istLeer, freitextVorschlag, herkunftVon,
+  bewerteZahl,
 } from '../engine/m3-fragetypen.js';
+import { zahlfeld, zahlUngueltig, zahlAufloesung } from './zahl.js';
 
 /**
  * @param {HTMLElement} ziel
@@ -39,6 +42,7 @@ export function zeigeRunde(ziel, runde) {
   let antwort = '';          // Freitext: getippte Antwort
   let leerNachfragen = false; // Freitext: Rückfrage bei leerem Feld
   let abgehakt = new Set();  // Freitext: abgehakte Kernpunkte
+  let ungueltig = false;     // Zahl: Eingabe ist keine Zahl
 
   function neueFrage() {
     const frage = runde.fragen[nr];
@@ -47,6 +51,7 @@ export function zeigeRunde(ziel, runde) {
     antwort = '';
     leerNachfragen = false;
     abgehakt = new Set();
+    ungueltig = false;
     reihenfolge = frage.typ === 'mc' ? optionsReihenfolge(frage) : [];
     zeichneFrage();
   }
@@ -80,11 +85,16 @@ export function zeigeRunde(ziel, runde) {
       frage.hinweis ? el('p', { class: 'hinweis' }, frage.hinweis) : null,
       frage.typ === 'mc' ? optionen(frage) : null,
       frage.typ === 'freitext' && !aufgedeckt ? eingabefeld() : null,
+      frage.typ === 'zahl' && !aufgedeckt ? zahleingabe(frage) : null,
     );
 
     const inhalt = [kopf, balken, karte];
     if (uebung && nr === 0 && !aufgedeckt) inhalt.push(el('p', { class: 'hinweis' }, t('runde.uebungHinweis')));
-    if (aufgedeckt) inhalt.push(...(frage.typ === 'mc' ? mcAufloesung(frage) : freitextAufloesung(frage)));
+    if (aufgedeckt) {
+      if (frage.typ === 'mc') inhalt.push(...mcAufloesung(frage));
+      else if (frage.typ === 'zahl') inhalt.push(zahlKarte(frage));
+      else inhalt.push(...freitextAufloesung(frage));
+    }
 
     const aktionen = el('div', { class: 'aktionen' });
     if (frage.typ === 'mc') {
@@ -93,6 +103,17 @@ export function zeigeRunde(ziel, runde) {
         aktionen.append(el('button', {
           type: 'button', class: 'knopf', onclick: () => bewerteUndWeiter(bewerteMc(frage, gewaehlt)),
         }, t('runde.weiter')));
+      }
+    } else if (frage.typ === 'zahl') {
+      if (aufgedeckt) {
+        aktionen.append(el('button', {
+          type: 'button', class: 'knopf', onclick: () => bewerteUndWeiter(bewerteZahl(frage, antwort).richtig),
+        }, t('runde.weiter')));
+      } else {
+        if (leerNachfragen) aktionen.append(el('p', { class: 'hinweis mitte', id: 'leerhinweis', role: 'status' }, t('zahl.leerHinweis')));
+        aktionen.append(el('button', {
+          type: 'button', class: 'knopf', id: 'pruefknopf', onclick: () => pruefeZahl(frage),
+        }, t(leerNachfragen ? 'zahl.ohneAntwort' : 'zahl.pruefen')));
       }
     } else if (!aufgedeckt) {
       if (leerNachfragen) aktionen.append(el('p', { class: 'hinweis mitte', id: 'leerhinweis', role: 'status' }, t('freitext.leerHinweis')));
@@ -247,6 +268,48 @@ export function zeigeRunde(ziel, runde) {
   function aktualisiereVorschlag(frage) {
     ziel.querySelector('#vorschlag')?.replaceChildren(vorschlagstext(frage));
     ziel.querySelector('#bewertung')?.replaceWith(bewertungsknoepfe(frage));
+  }
+
+  // --- Zahl (F-09) -------------------------------------------------------
+
+  function zahleingabe(frage) {
+    return zahlfeld({
+      frage, wert: antwort, ungueltig,
+      onInput: (text) => {
+        antwort = text;
+        if (leerNachfragen && !istLeer(antwort)) {
+          // Nur Hinweis und Knopf ändern; das Feld bleibt, damit die Tastatur offen bleibt.
+          leerNachfragen = false;
+          ziel.querySelector('#leerhinweis')?.remove();
+          const knopf = ziel.querySelector('#pruefknopf');
+          if (knopf) knopf.textContent = t('zahl.pruefen');
+        }
+      },
+      onEnter: (text) => { antwort = text; pruefeZahl(frage); },
+    });
+  }
+
+  function pruefeZahl(frage) {
+    if (zahlUngueltig(frage, antwort)) {
+      ungueltig = true;
+      zeichneFrage();
+      ziel.querySelector('#antwort')?.focus();
+      return;
+    }
+    ungueltig = false;
+    if (istLeer(antwort) && !leerNachfragen) {
+      leerNachfragen = true;
+      zeichneFrage();
+      ziel.querySelector('#antwort')?.focus();
+      return;
+    }
+    aufgedeckt = true;
+    zeichneFrage();
+  }
+
+  function zahlKarte(frage) {
+    return el('section', { class: 'karte aufloesung', 'aria-live': 'polite' },
+      ...zahlAufloesung(frage, antwort), ...erklaerungUndQuelle(frage));
   }
 
   // --- gemeinsam ---------------------------------------------------------

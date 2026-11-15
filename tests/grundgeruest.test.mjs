@@ -80,7 +80,8 @@ test('Testserver liefert nichts aus privat/ und nichts außerhalb des Projekts',
 
 test('jeder Text, den die Bildschirme verwenden, steht in de.json', async () => {
   const de = JSON.parse(await lies('src/i18n/de.json'));
-  const quelltext = (await lies('src/app.js')) + (await lies('src/ui/start.js')) + (await lies('src/ui/runde.js'));
+  const quelltext = (await lies('src/app.js')) + (await lies('src/ui/start.js')) + (await lies('src/ui/runde.js'))
+    + (await lies('src/ui/zahl.js')) + (await lies('src/ui/pruefung.js'));
   const schluessel = new Set([...quelltext.matchAll(/\bt\('([\w.]+)'/g)].map((m) => m[1]));
   for (const modus of ['normal', 'vorziehen', 'fehler']) schluessel.add(`runde.titel.${modus}`);
   assert.ok(schluessel.size > 20);

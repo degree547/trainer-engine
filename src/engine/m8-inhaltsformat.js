@@ -34,11 +34,27 @@
 //   typ "freitext": "musterantwort", "kernpunkte" (Liste von Texten),
 //                   "kernpunkteStatus" (ungeprueft | geprueft),
 //                   "herkunft" (amtlich | buch | eigen)              (F-32)
+//   typ "zahl":     "loesung" (Zahl), "toleranz" (Zahl ab 0, erlaubte Abweichung nach oben
+//                   und unten), "einheit" (Text, darf leer sein, z. B. "kn", "°"),
+//                   optional "kreis" (Zahl > 0, z. B. 360: Abweichung im Kreis gemessen),
+//                   optional "herkunft"                               (F-09)
+//
+// Generatoren (F-28): optional "generatoren": [ Generator, … ]; Aufbau siehe M9.
+//   "id" wie bei Fragen (Präfix, eindeutig auch gegenüber den Fragen), "thema",
+//   "freigegeben" (true | false), "frage" (Platzhalter nur für Variablen), "variablen"
+//   (mindestens eine, je "von" ≤ "bis", optional "schritt" > 0), "loesung" (Formel aus
+//   Variablen), optional "nachkommastellen" (ganze Zahl ab 0), "toleranz", "einheit",
+//   optional "kreis", "erklaerung" (Platzhalter für Variablen und {loesung}), "quelle",
+//   optional "herkunft", optional "hinweis". Die Formel wird mit den kleinsten und
+//   größten Werten probegerechnet; ergibt sie keine Zahl, ist das ein Fehler.
 //
 // Fehler sind Objekte { code, zeile, ort, werte }; die Texte zu den Codes stehen in src/i18n.
 
+import { leseFormel, namenIn, platzhalterIn, rechne, wertebereich, FormelFehler, FUNKTIONEN, KONSTANTEN }
+  from './m9-generatoren.js';
+
 export const FORMAT_VERSION = 1;
-export const FRAGETYPEN = ['mc', 'freitext'];
+export const FRAGETYPEN = ['mc', 'freitext', 'zahl'];
 export const HERKUENFTE = ['amtlich', 'buch', 'eigen'];
 export const PRUEFSTATUS = ['ungeprueft', 'geprueft'];
 
@@ -286,6 +302,14 @@ export function pruefeModul(daten, zeilen = new Map()) {
     });
   }
 
+  if (daten.generatoren !== undefined) {
+    const praefix = istObjekt(meta) && typeof meta.id === 'string' && ID_MUSTER.test(meta.id) ? `${meta.id}-` : null;
+    const belegt = new Set((Array.isArray(daten.fragen) ? daten.fragen : [])
+      .filter((f) => istObjekt(f) && typeof f.id === 'string').map((f) => f.id));
+    pruefeGeneratoren(daten.generatoren, { melde, themenIds, praefix, belegt,
+      themenGeprueft: Array.isArray(daten.themen) });
+  }
+
   if (daten.pruefung !== undefined) {
     pruefePruefung(daten.pruefung, { melde, themenIds, fragen: Array.isArray(daten.fragen) ? daten.fragen : [] });
   }
@@ -421,6 +445,17 @@ function pruefeFrage(frage, pfad, ort, k) {
     return;
   }
 
+  if (frage.typ === 'zahl') {
+    if (frage.loesung === undefined) melde('inhalt.feldFehlt', `${pfad}.loesung`, ort, { feld: 'loesung' });
+    else if (!istZahl(frage.loesung)) melde('inhalt.keineZahl', `${pfad}.loesung`, ort, { feld: 'loesung' });
+    pruefeZahlfelder(frage, pfad, ort, melde);
+    if (frage.herkunft !== undefined && !HERKUENFTE.includes(frage.herkunft)) {
+      melde('inhalt.wertNichtErlaubt', `${pfad}.herkunft`, ort,
+        { feld: 'herkunft', wert: String(frage.herkunft), erlaubt: HERKUENFTE.join(', ') });
+    }
+    return;
+  }
+
   // freitext (F-32)
   textFeld('musterantwort');
   const kp = frage.kernpunkte;
@@ -439,6 +474,145 @@ function pruefeFrage(frage, pfad, ort, k) {
         { feld, wert: String(frage[feld]), erlaubt: erlaubt.join(', ') });
     }
   }
+}
+
+const istZahl = (w) => typeof w === 'number' && Number.isFinite(w);
+
+/** Felder, die Zahlenfragen und Generatoren gemeinsam haben: toleranz, einheit, kreis. */
+function pruefeZahlfelder(eintrag, pfad, ort, melde) {
+  if (eintrag.toleranz === undefined) melde('inhalt.feldFehlt', `${pfad}.toleranz`, ort, { feld: 'toleranz' });
+  else if (!istZahl(eintrag.toleranz) || eintrag.toleranz < 0) {
+    melde('inhalt.zahlAb', `${pfad}.toleranz`, ort, { feld: 'toleranz', min: 0 });
+  }
+  if (eintrag.einheit === undefined) melde('inhalt.feldFehlt', `${pfad}.einheit`, ort, { feld: 'einheit' });
+  else if (typeof eintrag.einheit !== 'string') {
+    melde('inhalt.keinTextLeerErlaubt', `${pfad}.einheit`, ort, { feld: 'einheit' });
+  }
+  if (eintrag.kreis !== undefined && (!istZahl(eintrag.kreis) || eintrag.kreis <= 0)) {
+    melde('inhalt.zahlGroesser', `${pfad}.kreis`, ort, { feld: 'kreis', min: 0 });
+  }
+}
+
+const VARIABLEN_MUSTER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+function pruefeGeneratoren(generatoren, k) {
+  const { melde } = k;
+  if (!Array.isArray(generatoren)) {
+    melde('inhalt.keineListe', 'generatoren', { art: 'modul' }, { feld: 'generatoren' });
+    return;
+  }
+  generatoren.forEach((g, i) => {
+    const pfad = `generatoren.${i}`;
+    const ort = { art: 'generator', nr: i + 1, id: istObjekt(g) && typeof g.id === 'string' ? g.id : '' };
+    if (!istObjekt(g)) { melde('inhalt.keinObjekt', pfad, ort, { feld: 'generatoren' }); return; }
+    const textFeld = (feld, leerErlaubt = false) => {
+      if (g[feld] === undefined) melde('inhalt.feldFehlt', `${pfad}.${feld}`, ort, { feld });
+      else if (leerErlaubt ? typeof g[feld] !== 'string' : !istText(g[feld])) {
+        melde(leerErlaubt ? 'inhalt.keinTextLeerErlaubt' : 'inhalt.keinText', `${pfad}.${feld}`, ort, { feld });
+      }
+    };
+
+    // ID wie bei Fragen, dazu eindeutig gegenüber allen Fragen (der Lernstand hängt an der ID).
+    if (g.id === undefined) melde('inhalt.feldFehlt', `${pfad}.id`, ort, { feld: 'id' });
+    else if (!istText(g.id) || !ID_MUSTER.test(g.id)) melde('inhalt.idUngueltig', `${pfad}.id`, ort, { wert: String(g.id) });
+    else {
+      if (k.belegt.has(g.id)) melde('inhalt.generatorIdBelegt', `${pfad}.id`, ort, { wert: g.id });
+      else k.belegt.add(g.id);
+      if (k.praefix && !g.id.startsWith(k.praefix)) melde('inhalt.idPraefix', `${pfad}.id`, ort, { wert: g.id, praefix: k.praefix });
+    }
+    if (g.thema === undefined) melde('inhalt.feldFehlt', `${pfad}.thema`, ort, { feld: 'thema' });
+    else if (k.themenGeprueft && !k.themenIds.has(g.thema)) {
+      melde('inhalt.themaUnbekannt', `${pfad}.thema`, ort, { wert: String(g.thema) });
+    }
+    if (g.freigegeben === undefined) melde('inhalt.feldFehlt', `${pfad}.freigegeben`, ort, { feld: 'freigegeben' });
+    else if (typeof g.freigegeben !== 'boolean') {
+      melde('inhalt.keinWahrheitswert', `${pfad}.freigegeben`, ort, { feld: 'freigegeben' });
+    }
+
+    textFeld('frage');
+    textFeld('quelle');
+    textFeld('erklaerung', true);
+    if (g.hinweis !== undefined && typeof g.hinweis !== 'string') {
+      melde('inhalt.keinTextLeerErlaubt', `${pfad}.hinweis`, ort, { feld: 'hinweis' });
+    }
+    if (g.herkunft !== undefined && !HERKUENFTE.includes(g.herkunft)) {
+      melde('inhalt.wertNichtErlaubt', `${pfad}.herkunft`, ort,
+        { feld: 'herkunft', wert: String(g.herkunft), erlaubt: HERKUENFTE.join(', ') });
+    }
+    pruefeZahlfelder(g, pfad, ort, melde);
+    if (g.nachkommastellen !== undefined && !istGanzeZahl(g.nachkommastellen, 0)) {
+      melde('inhalt.ganzeZahl', `${pfad}.nachkommastellen`, ort, { feld: 'nachkommastellen', min: 0 });
+    }
+
+    // Variablen
+    const namen = new Set();
+    let variablenOk = true;
+    if (g.variablen === undefined) {
+      melde('inhalt.feldFehlt', `${pfad}.variablen`, ort, { feld: 'variablen' });
+      variablenOk = false;
+    } else if (!istObjekt(g.variablen) || Object.keys(g.variablen).length === 0) {
+      melde('inhalt.generatorKeineVariablen', `${pfad}.variablen`, ort);
+      variablenOk = false;
+    } else {
+      for (const [name, bereich] of Object.entries(g.variablen)) {
+        const vpfad = `${pfad}.variablen.${name}`;
+        if (!VARIABLEN_MUSTER.test(name) || Object.hasOwn(FUNKTIONEN, name) || Object.hasOwn(KONSTANTEN, name) || name === 'loesung') {
+          melde('inhalt.variablenName', vpfad, ort, { wert: name });
+          variablenOk = false;
+          continue;
+        }
+        namen.add(name);
+        if (!istObjekt(bereich) || !istZahl(bereich.von) || !istZahl(bereich.bis)) {
+          melde('inhalt.variablenBereich', vpfad, ort, { name });
+          variablenOk = false;
+          continue;
+        }
+        if (bereich.von > bereich.bis) { melde('inhalt.variablenVonBis', vpfad, ort, { name }); variablenOk = false; }
+        if (bereich.schritt !== undefined && (!istZahl(bereich.schritt) || bereich.schritt <= 0)) {
+          melde('inhalt.zahlGroesser', `${vpfad}.schritt`, ort, { feld: 'schritt', min: 0 });
+          variablenOk = false;
+        }
+      }
+    }
+
+    // Platzhalter nur für bekannte Variablen (in der Erklärung auch {loesung}).
+    if (variablenOk) {
+      for (const [feld, erlaubt] of [['frage', namen], ['erklaerung', new Set([...namen, 'loesung'])]]) {
+        if (typeof g[feld] !== 'string') continue;
+        for (const name of platzhalterIn(g[feld])) {
+          if (!erlaubt.has(name)) melde('inhalt.platzhalterUnbekannt', `${pfad}.${feld}`, ort, { feld, name });
+        }
+      }
+    }
+
+    // Lösungsformel: lesbar, nur bekannte Variablen, mit kleinsten und größten Werten berechenbar.
+    if (g.loesung === undefined) { melde('inhalt.feldFehlt', `${pfad}.loesung`, ort, { feld: 'loesung' }); return; }
+    let baum;
+    try {
+      baum = leseFormel(g.loesung);
+    } catch (e) {
+      if (!(e instanceof FormelFehler)) throw e;
+      melde('inhalt.formelFehler', `${pfad}.loesung`, ort, { formel: String(g.loesung) });
+      return;
+    }
+    if (!variablenOk) return;
+    const fremd = [...namenIn(baum)].filter((n) => !namen.has(n));
+    if (fremd.length > 0) { melde('inhalt.formelVariable', `${pfad}.loesung`, ort, { name: fremd.join(', ') }); return; }
+    for (const ende of ['von', 'bis']) {
+      const werte = {};
+      for (const [name, bereich] of Object.entries(g.variablen)) {
+        const { anzahl, wert } = wertebereich(bereich);
+        werte[name] = ende === 'von' ? wert(0) : wert(anzahl - 1);
+      }
+      try {
+        rechne(baum, werte);
+      } catch (e) {
+        if (!(e instanceof FormelFehler)) throw e;
+        melde('inhalt.formelKeinErgebnis', `${pfad}.loesung`, ort, { ende });
+        return;
+      }
+    }
+  });
 }
 
 /**

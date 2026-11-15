@@ -3,13 +3,17 @@
 // 2. Bearbeiten: alle Fragen ohne Auflösung, mit Uhr; vor und zurück blättern, Abgeben.
 //    Läuft die Zeit ab, wird automatisch abgegeben.
 // 3. Bewerten: Freitext-Antworten selbst gegen Musterantwort und Kernpunkte bewerten
-//    (ohne Zeitlimit). Multiple Choice bewertet die App, leere Antworten zählen als falsch.
+//    (ohne Zeitlimit). Multiple Choice und Zahlen (F-09) bewertet die App, leere Antworten
+//    zählen als falsch.
 // 4. Auswertung: bestanden oder nicht, Punkte je Thema, falsche Fragen mit Lösung.
 // Die Simulation ändert keine Leitner-Fächer und gibt keine XP; das regelt app.js.
 
 import { t } from './i18n.js';
 import { el } from './dom.js';
-import { optionsReihenfolge, buchstabe, bewerteMc, istLeer, freitextVorschlag, herkunftVon } from '../engine/m3-fragetypen.js';
+import {
+  optionsReihenfolge, buchstabe, bewerteMc, bewerteZahl, istLeer, freitextVorschlag, herkunftVon,
+} from '../engine/m3-fragetypen.js';
+import { zahlfeld, zahlUngueltig, zahlLoesung, mitEinheit } from './zahl.js';
 import { endeUm, restzeit, zeittext, werteAus } from '../engine/m6-pruefung.js';
 
 // Ab dieser Restzeit wird die Uhr hervorgehoben.
@@ -37,7 +41,7 @@ export function zeigePruefung(ziel, sim) {
   let uhr = null;               // setInterval der Uhr
   let abgegebenUm = null;
   let zeitAbgelaufen = false;
-  const antworten = new Map();  // Frage-ID → MC: Optionsnummer, Freitext: Text
+  const antworten = new Map();  // Frage-ID → MC: Optionsnummer, Freitext und Zahl: Text
   const reihenfolgen = new Map(); // Frage-ID → Anzeigereihenfolge der MC-Optionen
   const bewertungen = new Map(); // Frage-ID → richtig
   let zuBewerten = [];          // Freitext-Fragen mit Antwort
@@ -145,7 +149,9 @@ export function zeigePruefung(ziel, sim) {
       el('p', { class: 'etikett' }, themenTitel.get(frage.thema) ?? frage.thema),
       el('h2', { class: 'fragetext', id: 'fragetext' }, frage.frage),
       frage.hinweis ? el('p', { class: 'hinweis' }, frage.hinweis) : null,
-      frage.typ === 'mc' ? mcOptionen(frage) : eingabefeld(frage),
+      frage.typ === 'mc' ? mcOptionen(frage) : null,
+      frage.typ === 'freitext' ? eingabefeld(frage) : null,
+      frage.typ === 'zahl' ? zahleingabe(frage) : null,
     );
 
     const letzte = nr === bogen.length - 1;
@@ -199,6 +205,20 @@ export function zeigePruefung(ziel, sim) {
       feld);
   }
 
+  function zahleingabe(frage) {
+    const weiter = () => {
+      if (zahlUngueltig(frage, antworten.get(frage.id) ?? '')) { zeichneFrage(); ziel.querySelector('#antwort')?.focus(); return; }
+      if (nr === bogen.length - 1) bestaetigeAbgabe(); else gehe(nr + 1);
+    };
+    return zahlfeld({
+      frage, wert: antworten.get(frage.id) ?? '', enterkeyhint: 'next',
+      // Hinweis auf eine ungültige Zahl erst nach Enter oder beim Zurückkommen, nicht beim Tippen.
+      ungueltig: zahlUngueltig(frage, antworten.get(frage.id) ?? ''),
+      onInput: (text) => antworten.set(frage.id, text),
+      onEnter: (text) => { antworten.set(frage.id, text); weiter(); },
+    });
+  }
+
   function bestaetigeAbgabe() {
     merkeEingabe();
     const offen = bogen.length - bogen.filter(beantwortet).length;
@@ -227,6 +247,7 @@ export function zeigePruefung(ziel, sim) {
     for (const frage of bogen) {
       const a = antworten.get(frage.id);
       if (frage.typ === 'mc') bewertungen.set(frage.id, a !== undefined && bewerteMc(frage, a));
+      else if (frage.typ === 'zahl') bewertungen.set(frage.id, bewerteZahl(frage, a ?? '').richtig);
       else if (istLeer(a ?? '')) bewertungen.set(frage.id, false);
     }
     zuBewerten = bogen.filter((frage) => frage.typ === 'freitext' && !bewertungen.has(frage.id));
@@ -387,10 +408,15 @@ export function zeigePruefung(ziel, sim) {
     const a = antworten.get(frage.id);
     let eigene;
     if (frage.typ === 'mc') eigene = a === undefined ? null : frage.optionen[a];
-    else eigene = istLeer(a ?? '') ? null : a;
-    const loesung = frage.typ === 'mc'
-      ? [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])]
-      : [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
+    else if (frage.typ === 'zahl') {
+      const zahl = bewerteZahl(frage, a ?? '').zahl;
+      eigene = zahl === null ? (istLeer(a ?? '') ? null : a) : mitEinheit(zahl, frage.einheit);
+    } else eigene = istLeer(a ?? '') ? null : a;
+    let loesung;
+    if (frage.typ === 'mc') {
+      loesung = [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])];
+    } else if (frage.typ === 'zahl') loesung = zahlLoesung(frage);
+    else loesung = [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
     return el('li', {},
       el('details', {},
         el('summary', {},

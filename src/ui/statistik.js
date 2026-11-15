@@ -4,6 +4,7 @@
 import { t, tn } from './i18n.js';
 import { el } from './dom.js';
 import { MIN_VERSUCHE } from '../engine/m5-statistik.js';
+import { zahlLoesung } from './zahl.js';
 
 const prozent = (anteil) => Math.round(anteil * 100);
 
@@ -85,9 +86,11 @@ function schwaechenkarte({ modul, schwaechen }) {
 
 function schwaechenzeile(e, themenTitel) {
   const { frage } = e;
-  const antwort = frage.typ === 'mc'
-    ? [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])]
-    : [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
+  let antwort;
+  if (frage.typ === 'mc') {
+    antwort = [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])];
+  } else if (frage.typ === 'zahl') antwort = zahlLoesung(frage);
+  else antwort = [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
   return el('li', {},
     el('details', {},
       el('summary', {},
