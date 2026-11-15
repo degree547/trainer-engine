@@ -36,7 +36,7 @@ MS1 liefert eine lernbare App mit dem amtlichen Katalog, MS2 die Motivation, MS3
 
 ## Arbeitspakete
 
-Elf Arbeitspakete und die Nachträge AP6A und AP7A decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen, die für den SKS gebraucht werden. Jedes Paket ist eine abgeschlossene Claude-Code-Sitzung mit eigenem Commit.
+Elf Arbeitspakete und die Nachträge AP6A und AP7A (AP9 ist in AP9A und AP9B geteilt) decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen, die für den SKS gebraucht werden. Jedes Paket ist eine abgeschlossene Claude-Code-Sitzung mit eigenem Commit.
 
 | AP | Inhalt | Module | Anforderungen | Ergebnis | Meilenstein | Status |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -51,9 +51,12 @@ Elf Arbeitspakete und die Nachträge AP6A und AP7A decken alle Muss-Anforderunge
 | AP7 | Statistik und Schwächenliste | M5 | F-17, F-18 | Fortschritt je Thema sichtbar | MS2 | erledigt |
 | AP7A | Nachtrag (vorgezogen aus der Zeit nach Version 1): Runde auf ein Thema beschränken | M2 | F-06 | Thema auf der Startseite wählbar, z. B. nur Navigation oder nur Wetterkunde | MS2 | erledigt |
 | AP8 | Export, Import, Sprachumschaltung | M7 | F-22, F-23 | Datensicherung, Oberfläche Deutsch und Englisch | MS2 | erledigt |
-| AP9 | Kurs- und Peilaufgaben mit Wind- und Stromversatz | M9, M3 | F-28, F-09 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 | offen |
+| AP9A | Teil 1 ohne Buch: Zahleneingabe mit Toleranz und Einheit, Gerüst für Generatoren (gesperrt, nur mit einer einfachen Beispielrechnung getestet) | M9, M3 | F-09, F-28 | Zahlenantwort mit Toleranz bewertbar, Generatoren technisch vorbereitet, aber nicht freigegeben | MS3 | offen |
+| AP9B | Teil 2 mit Buch: Rechenwege für Kurs, Peilung, Missweisung, Deviation, Wind- und Stromversatz, Tests gegen Beispielaufgaben aus dem Buch, danach Freigabe | M9 | F-28 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 | offen, wartet auf das Buch |
 | AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 | offen |
 | AP11 | Buchinhalte einarbeiten, Abnahme | Inhalt | Abnahmekriterien | Version 1 abgenommen | MS4 | offen |
+
+**Reihenfolge ab AP9 (geändert am 15.11.2026):** Das Buch ist noch nicht da, die Rechenwege lassen sich ohne seine Beispielaufgaben nicht prüfen. Deshalb ist AP9 geteilt und die Reihenfolge lautet: AP10, AP9A, AP9B, AP11. AP9B und AP11 beginnen, sobald das Buch da ist. Kommt es erst nach dem 20.12.2026, wird gesondert entschieden, ob AP9B trotz Feature-Stopp noch umgesetzt wird.
 
 **Status der Arbeitspakete**
 

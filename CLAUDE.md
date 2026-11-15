@@ -5,7 +5,7 @@
 Modulare Lern-App (PWA) mit Wiederholungssystem und Gamification. Die Engine enthält keine Prüfungsinhalte; Inhalte kommen als austauschbare JSON-Module. Erstes Inhaltsmodul: SKS (Sportküstenschifferschein) auf Basis des amtlichen Fragenkatalogs mit den offiziellen Antworten (ELWIS).
 
 * Anforderungen: `docs/lastenheft.md` (Anforderungs-IDs F-01 bis F-32)
-* Reihenfolge und Meilensteine: `docs/projektplan.md` (Arbeitspakete AP1 bis AP11)
+* Reihenfolge und Meilensteine: `docs/projektplan.md` (Arbeitspakete AP1 bis AP11, AP9 geteilt in AP9A und AP9B)
 * Bei Widersprüchen gilt das Lastenheft für den Inhalt, der Projektplan für die Reihenfolge. Im Zweifel nachfragen.
 * Sprache der Oberfläche: Deutsch und Englisch umschaltbar (gilt vor der älteren Zeile „Oberfläche auf Deutsch“ im Lastenheft).
 
