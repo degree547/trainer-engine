@@ -17,6 +17,14 @@ Jurist, kein Entwickler, hat bisher nicht mit Git oder GitHub gearbeitet.
 * Nie Dateien löschen, Historie umschreiben oder force-pushen, ohne vorher zu fragen.
 * Am Ende jeder Sitzung sagen, was der Nutzer im Browser oder auf dem Smartphone prüfen soll.
 
+## Git und Dokumente
+
+* Maßgeblich sind `docs/lastenheft.md` und `docs/projektplan.md`. Es gibt keine andere gültige Fassung.
+* Zu Beginn jeder Sitzung zuerst `git pull`.
+* Gearbeitet wird direkt auf `main`, keine eigenen Branches.
+* Neue Anforderungen oder APs werden zuerst in `docs/` eingetragen und erst dann umgesetzt.
+* Nach jedem abgeschlossenen AP: Status im Projektplan aktualisieren, committen und auf `main` pushen.
+
 ## Arbeitsweise
 
 1. Ein Arbeitspaket pro Sitzung, in der Reihenfolge des Projektplans.
