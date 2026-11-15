@@ -38,22 +38,22 @@ MS1 liefert eine lernbare App mit dem amtlichen Katalog, MS2 die Motivation, MS3
 
 Elf Arbeitspakete und die Nachträge AP6A und AP7A decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen, die für den SKS gebraucht werden. Jedes Paket ist eine abgeschlossene Claude-Code-Sitzung mit eigenem Commit.
 
-| AP | Inhalt | Module | Anforderungen | Ergebnis | Meilenstein |
-| --- | --- | --- | --- | --- | --- |
-| AP1 | Repo, Hosting, PWA-Grundgerüst mit Manifest und Service Worker | M1 | F-01 | App lädt offline auf dem Smartphone | MS1 |
-| AP2 | Inhaltsformat und Import des amtlichen Katalogs | M8 | F-24, F-25, F-26, F-32 | Katalog als JSON mit offiziellen Antworten | MS1 |
-| AP3 | Leitner-Fächer und Rundenbildung | M2 | F-03, F-05, F-07 | Runden mit 10 Fragen, fällige zuerst | MS1 |
-| AP4 | Freitext mit Kernpunkten, Multiple Choice | M3 | F-29, F-30, F-08 | Antwort tippen, Musterantwort sehen, selbst bewerten | MS1 |
-| AP5 | Lernstand speichern | M7 | F-21 | Fortschritt bleibt nach Neustart erhalten | MS1 |
-| AP6 | XP, Streak, Level, Tagesziel, Hinweis beim Start | M4 | F-12, F-13, F-14, F-15 | Tagesziel eine Runde, mehr erlaubt | MS2 |
-| AP6A | Nachträge: Enter bestätigt die Freitexteingabe, Freitext-Antworten speichern und exportieren, Ränge mit Bild (Rangfolge im SKS-Modul) | M3, M4, M7, M8 | F-33, F-34, F-36, F-37 | Enter schickt ab, Antworten samt Selbstbewertung liegen im Export, Rang mit Platzhalterbild erscheint je Level | MS2 |
-| AP6B | Optional: Rangbilder einbauen, sobald sie fertig sind (Kann, jederzeit vorziehbar) | Inhalt | F-38 | Zwölf eigene Bilder statt Platzhalter, offline verfügbar | offen |
-| AP7 | Statistik und Schwächenliste | M5 | F-17, F-18 | Fortschritt je Thema sichtbar | MS2 |
-| AP7A | Nachtrag (vorgezogen aus der Zeit nach Version 1): Runde auf ein Thema beschränken | M2 | F-06 | Thema auf der Startseite wählbar, z. B. nur Navigation oder nur Wetterkunde | MS2 |
-| AP8 | Export, Import, Sprachumschaltung | M7 | F-22, F-23 | Datensicherung, Oberfläche Deutsch und Englisch | MS2 |
-| AP9 | Kurs- und Peilaufgaben mit Wind- und Stromversatz | M9, M3 | F-28, F-09 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 |
-| AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 |
-| AP11 | Buchinhalte einarbeiten, Abnahme | Inhalt | Abnahmekriterien | Version 1 abgenommen | MS4 |
+| AP | Inhalt | Module | Anforderungen | Ergebnis | Meilenstein | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| AP1 | Repo, Hosting, PWA-Grundgerüst mit Manifest und Service Worker | M1 | F-01 | App lädt offline auf dem Smartphone | MS1 | erledigt |
+| AP2 | Inhaltsformat und Import des amtlichen Katalogs | M8 | F-24, F-25, F-26, F-32 | Katalog als JSON mit offiziellen Antworten | MS1 | erledigt |
+| AP3 | Leitner-Fächer und Rundenbildung | M2 | F-03, F-05, F-07 | Runden mit 10 Fragen, fällige zuerst | MS1 | erledigt |
+| AP4 | Freitext mit Kernpunkten, Multiple Choice | M3 | F-29, F-30, F-08 | Antwort tippen, Musterantwort sehen, selbst bewerten | MS1 | erledigt |
+| AP5 | Lernstand speichern | M7 | F-21 | Fortschritt bleibt nach Neustart erhalten | MS1 | erledigt |
+| AP6 | XP, Streak, Level, Tagesziel, Hinweis beim Start | M4 | F-12, F-13, F-14, F-15 | Tagesziel eine Runde, mehr erlaubt | MS2 | erledigt |
+| AP6A | Nachträge: Enter bestätigt die Freitexteingabe, Freitext-Antworten speichern und exportieren, Ränge mit Bild (Rangfolge im SKS-Modul) | M3, M4, M7, M8 | F-33, F-34, F-36, F-37 | Enter schickt ab, Antworten samt Selbstbewertung liegen im Export, Rang mit Platzhalterbild erscheint je Level | MS2 | erledigt |
+| AP6B | Optional: Rangbilder einbauen, sobald sie fertig sind (Kann, jederzeit vorziehbar) | Inhalt | F-38 | Zwölf eigene Bilder statt Platzhalter, offline verfügbar | offen | offen |
+| AP7 | Statistik und Schwächenliste | M5 | F-17, F-18 | Fortschritt je Thema sichtbar | MS2 | erledigt |
+| AP7A | Nachtrag (vorgezogen aus der Zeit nach Version 1): Runde auf ein Thema beschränken | M2 | F-06 | Thema auf der Startseite wählbar, z. B. nur Navigation oder nur Wetterkunde | MS2 | erledigt |
+| AP8 | Export, Import, Sprachumschaltung | M7 | F-22, F-23 | Datensicherung, Oberfläche Deutsch und Englisch | MS2 | erledigt |
+| AP9 | Kurs- und Peilaufgaben mit Wind- und Stromversatz | M9, M3 | F-28, F-09 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 | offen |
+| AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 | offen |
+| AP11 | Buchinhalte einarbeiten, Abnahme | Inhalt | Abnahmekriterien | Version 1 abgenommen | MS4 | offen |
 
 **Status der Arbeitspakete**
 
@@ -70,7 +70,7 @@ Elf Arbeitspakete und die Nachträge AP6A und AP7A decken alle Muss-Anforderunge
 | AP7A | erledigt | 14.11.2026 | F-06, vorgezogen aus der Zeit nach Version 1. Auf der Startseite steht über den Lernknöpfen eine Auswahl „Thema“ (Alle Themen oder ein einzelnes, z. B. Navigation oder Wetterkunde). Runde und vorgezogene Wiederholung nehmen dann nur Fragen dieses Themas, nach denselben Regeln (zuerst fällige, dann neue); fällig, neu und die Fächer auf der Startseite gelten für das gewählte Thema. Sind in anderen Themen Fragen fällig, erscheint ein Hinweis mit der Anzahl. In der Statistik hat jedes Thema einen Knopf „Dieses Thema lernen“. Die Wahl wird je Modul im Browser gemerkt (localStorage, kein Teil des Lernstands und des Exports); gibt es das Thema nicht mehr, gilt wieder „Alle Themen“. Themenrunden zählen für XP und Tagesziel wie jede Runde. Service Worker v9. 115 Tests grün. Im Browser in Smartphone-Größe geprüft (Auswahl, Neuladen, Runde, Knopf in der Statistik, Hinweis). Auf dem Smartphone geprüft (14.11.2026): Themenwahl bleibt nach dem Schließen erhalten, Runde im gewählten Thema funktioniert |
 | AP8 | erledigt | 14.11.2026 | Export, Import und Sprachumschaltung. F-22: Neue Karte „Einstellungen“ unten auf der Startseite mit „Sicherung exportieren“ und „Sicherung importieren“. Die Sicherungsdatei (`trainer-engine-sicherung-JJJJ-MM-TT.json`, eigene Versionsnummer) enthält den Lernstand aller Module, XP, Streak und Tagesziel sowie alle Freitext-Antworten (F-34). Der Import ersetzt nie, er führt zusammen: je Frage gewinnt die jüngere Karte, XP zählen je Gerät und Tag nur einmal (dieselbe Datei zweimal einlesen schadet nicht), Antworten kommen ohne Doppelte dazu; das Gerät behält seine eigene Geräte-ID. Die Datei wird vorher vollständig geprüft; falsche Dateien (Moduldatei, kein JSON, Datei aus einer neueren App-Version) werden mit Hinweis abgelehnt, ohne etwas zu ändern. Das Datum der letzten Sicherung steht in der Karte (nur für diesen Browser). F-23: Karten zu entfallenen Fragen bleiben gespeichert und in der Sicherung, zählen aber nicht mit; neue Fragen erscheinen als neu (Test). Sprache: Auswahl Deutsch/English, im Browser gemerkt; ohne Wahl gilt die Sprache des Browsers, sonst Deutsch. Modulinhalte bleiben in ihrer Sprache. Service Worker v10. 126 Tests grün. Im Browser in Smartphone-Größe geprüft (Export, Import, zweiter Import, falsche Dateien, Umschaltung mit Neuladen). Noch nicht auf dem Smartphone |
 
-Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung. Ausnahme ist F-38 (Rangbilder): Sie lässt sich jederzeit vorziehen, auch nach dem Feature-Stopp, weil sie nur Inhalt ändert und keinen Code.
+Nach Version 1 offen: F-02 (mehrere Module, nötig für IAPP), F-04, F-10, die Kann-Anforderungen sowie Kalender-Erinnerung und KI-Bewertung. Ausnahme sind die eigenen Rangbilder (F-38, Kann): Sie lassen sich jederzeit vorziehen, auch nach dem Feature-Stopp, weil sie nur Inhalt ändern und keinen Code.
 
 ## Inhaltsarbeit SKS
 
@@ -107,4 +107,4 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 - [x] Erste Claude-Code-Sitzung: AP1 und AP2
 - [ ] Kernpunkte stichprobenartig prüfen, vor allem Recht und Seemannschaft (Status „ungeprüft“ in `tools/sks/kernpunkte-*.json`)
 - [ ] Fehlende Abbildungen zu 13 Fragen nachtragen (Liste: Fragen mit Hinweis im Modul)
-- [ ] Optional: Rangbilder mit Copilot erstellen (Anforderungen und Vorlage für den Auftrag in `tools/sks/LIESMICH.md`), danach AP6B
+- [ ] Optional: Rangbilder mit Copilot erstellen (Anforderungen im Lastenheft, Vorlage für den Auftrag in `tools/sks/LIESMICH.md`), danach AP6B
