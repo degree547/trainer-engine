@@ -7,7 +7,7 @@ Nov 12, 2026 · @Alex
 Version 1 ist am 20.12.2026 fertig, gelernt wird aber schon ab dem 22.11.2026 mit dem amtlichen Fragenkatalog. Danach gilt ein Feature-Stopp bis zur Prüfung.
 
 - **Prüfung:** Januar oder Februar 2027. Geplant wird für den frühen Termin.
-- **Inhalt:** Grundlage ist der amtliche SKS-Fragenkatalog mit den offiziellen Antworten von ELWIS. Das Buch (Sportküstenschifferschein & Sportbootführerschein See, Delius Klasing) ist bestellt und wird vor der Endabnahme eingearbeitet.
+- **Inhalt:** Grundlage ist der amtliche SKS-Fragenkatalog mit den offiziellen Antworten von ELWIS. Das Buch (Sportküstenschifferschein & Sportbootführerschein See, Delius Klasing) diente für die Rechenwege der Navigationsaufgaben (AP9B); ergänzende Erklärungen daraus kommen erst nach Version 1 und nur bei Bedarf (geändert am 20.11.2026).
 - **Nutzung:** zunächst nur privat, später auch für andere Kursteilnehmer.
 - **Annahme:** Umsetzung abends und am Wochenende, ohne festes Stundenbudget. Jeder Meilenstein umfasst etwa eine Woche.
 
@@ -32,7 +32,7 @@ Vier Meilensteine bis zum 20.12.2026; das tägliche Lernen beginnt mit MS1 am 22
 
 &#91;embedded content: Zeitplan Version 1 · 4 Meilensteine, Lernen ab MS1\]
 
-MS1 liefert eine lernbare App mit dem amtlichen Katalog, MS2 die Motivation, MS3 die Navigationsaufgaben und MS4 Simulation, Buchinhalte und Abnahme. Ab dem 21.12. wird nur noch gelernt und repariert.
+MS1 liefert eine lernbare App mit dem amtlichen Katalog, MS2 die Motivation, MS3 die Navigationsaufgaben und MS4 Simulation, Prüfstatus und Abnahme. Ab dem 21.12. wird nur noch gelernt und repariert.
 
 ## Arbeitspakete
 
@@ -54,9 +54,11 @@ Elf Arbeitspakete und die Nachträge AP6A und AP7A (AP9 ist in AP9A und AP9B get
 | AP9A | Teil 1 ohne Buch: Zahleneingabe mit Toleranz und Einheit, Gerüst für Generatoren (gesperrt, nur mit einer einfachen Beispielrechnung getestet) | M9, M3 | F-09, F-28 | Zahlenantwort mit Toleranz bewertbar, Generatoren technisch vorbereitet, aber nicht freigegeben | MS3 | erledigt |
 | AP9B | Teil 2 mit Buch: Rechenwege für Kurs, Peilung, Missweisung, Deviation, Wind- und Stromversatz, Tests gegen Beispielaufgaben aus dem Buch, danach Freigabe | M9 | F-28 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 | erledigt |
 | AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 | erledigt |
-| AP11 | Buchinhalte einarbeiten, Abnahme | Inhalt | Abnahmekriterien | Version 1 abgenommen | MS4 | offen |
+| AP11 | Prüfstatus „geprüft“ in der App umschalten, Testmodul mit 20 eigenen Fragen eines anderen Fachs, Prüfungsregeln mit ELWIS abgleichen, Abnahme | M7, M3, Inhalt | F-39, Abnahmekriterien | Version 1 abgenommen | MS4 | offen |
 
 **Reihenfolge ab AP9 (geändert am 15.11.2026):** Das Buch ist noch nicht da, die Rechenwege lassen sich ohne seine Beispielaufgaben nicht prüfen. Deshalb ist AP9 geteilt und die Reihenfolge lautet: AP10, AP9A, AP9B, AP11. AP9B und AP11 beginnen, sobald das Buch da ist. Kommt es erst nach dem 20.12.2026, wird gesondert entschieden, ob AP9B trotz Feature-Stopp noch umgesetzt wird.
+
+**AP11 verschlankt (geändert am 20.11.2026):** Fragen und Antworten sind amtlich und vollständig; ungeprüft sind nur die daraus abgeleiteten Kernpunkte. Sie werden gegen die amtliche Antwort geprüft, nicht gegen das Buch, und zwar nebenbei beim Lernen über einen Knopf in der App (F-39). Buchfotos braucht AP11 nicht mehr. Ergänzende Erklärungen aus dem Buch sind auf die Zeit nach Version 1 verschoben (`docs/ideen.md`). Das IAPP-Abnahmekriterium ist durch ein allgemeines Testmodul ersetzt.
 
 **Status der Arbeitspakete**
 
@@ -85,7 +87,7 @@ Die Inhaltsarbeit läuft parallel zum Code. Weil es die offiziellen Antworten gi
 1. **Amtlicher Katalog (MS1):** Den aktuellen Katalog von ELWIS herunterladen, als JSON importieren und Fragenzahl und Themen mit dem Original abgleichen. Herkunft: amtlich, mit Stand des Katalogs.
 2. **Kernpunkte (MS1 bis MS2):** Claude zerlegt jede offizielle Antwort in Kernpunkte für die Checkliste. Du prüfst die Kernpunkte stichprobenartig, vor allem bei Recht und Seemannschaft.
 3. **Navigationsaufgaben (MS3):** Die Rechenwege für Kurs, Peilung, Missweisung, Deviation sowie Wind- und Stromversatz werden gegen Beispielaufgaben aus dem Buch getestet. Erst wenn alle Beispiele stimmen, gehen die Generatoren in die App.
-4. **Buch (MS4):** Ergänzende Erklärungen aus dem Buch in eigenen Worten, als lokales Zusatzmodul. Herkunft: Buch, mit Kapitelangabe.
+4. **Buch (nach Version 1, nur bei Bedarf):** Ergänzende Erklärungen aus dem Buch in eigenen Worten, als lokales Zusatzmodul. Herkunft: Buch, mit Kapitelangabe. Für Version 1 nicht nötig, weil die amtlichen Antworten reichen (geändert am 20.11.2026).
 5. **Rangbilder (optional, jederzeit):** Du erstellst die zwölf Bilder mit Copilot nach den Anforderungen im Lastenheft (F-38) und wählst sie aus. Danach baut Claude Code sie in einer kurzen Sitzung ein (AP6B): Dateien ablegen, `bild` in `tools/sks/raenge.json` eintragen, Import, Service Worker, Tests. Anlass ist, wenn die Platzhalter beim Lernen stören.
 
 Kartenaufgaben in der Übungskarte bleiben Papierarbeit im Kurs.
@@ -111,7 +113,7 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 - [ ] Claude Code auf dem Notebook einrichten und den Tarif prüfen
 - [x] Aktuellen SKS-Fragenkatalog bei ELWIS herunterladen (Stand 01.07.2006, vor der Prüfung bei ELWIS auf Aktualität prüfen)
 - [x] Erste Claude-Code-Sitzung: AP1 und AP2
-- [ ] Kernpunkte stichprobenartig prüfen, vor allem Recht und Seemannschaft (Status „ungeprüft“ in `tools/sks/kernpunkte-*.json`)
+- [ ] Kernpunkte gegen die amtliche Antwort prüfen, mindestens 30 Fragen je Themengebiet, vor allem Recht und Seemannschaft (ab AP11 über den Knopf „geprüft“ in der App)
 - [ ] Prüfungswerte für die Simulation (Fragen je Bereich, Zeit, Punkte, Bestehensgrenze) mit der amtlichen Prüfungsordnung bei ELWIS oder dem Kurs abgleichen und in `tools/sks/pruefung.json` korrigieren, danach `node tools/import-sks.mjs`
 - [ ] Fehlende Abbildungen zu 13 Fragen nachtragen (Liste: Fragen mit Hinweis im Modul)
 - [ ] Optional: Rangbilder mit Copilot erstellen (Anforderungen im Lastenheft, Vorlage für den Auftrag in `tools/sks/LIESMICH.md`), danach AP6B

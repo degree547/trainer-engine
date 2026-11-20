@@ -84,6 +84,7 @@ Die Engine besteht aus neun Modulen, die sich einzeln ändern lassen. Jede Anfor
 | F-22 | M7 Speicherung | Export und Import des Fortschritts als Datei | Muss |
 | F-23 | M7 Speicherung | Der Fortschritt bleibt erhalten, wenn ein Modul aktualisiert wird (stabile Frage-IDs) | Muss |
 | F-34 | M7 Speicherung | Jede Freitext-Antwort wird mit Frage-ID, Zeitstempel, eingegebenem Text und Selbstbewertung lokal gespeichert und ist im Export (F-22) enthalten (Nachtrag) | Muss |
+| F-39 | M7 Speicherung | Der Prüfstatus der Kernpunkte lässt sich je Frage in der App auf „geprüft“ setzen und zurücknehmen; er wird lokal gespeichert, ist im Export (F-22) enthalten und übersteht Updates des Moduls (Nachtrag) | Soll |
 | F-24 | M8 Inhaltsformat | Ein Modul ist eine JSON-Datei mit Metadaten, Themen und Fragen | Muss |
 | F-25 | M8 Inhaltsformat | Jede Frage hat ID, Thema, Typ, richtige Antwort, Erklärung und Quellenangabe | Muss |
 | F-32 | M8 Inhaltsformat | Freitextfragen haben Pflichtfelder für Musterantwort, Kernpunkte, Herkunft der Antwort und Quelle | Muss |
@@ -159,7 +160,7 @@ Die App muss auf dem Smartphone ohne Netz zuverlässig laufen und ohne laufende 
 Die App ist für den privaten Gebrauch gedacht, Inhalte aus dem Kursbuch dürfen da angeschafft und nur für Privatnutzung übernommen werden. Der offizielle Frangenkatalog beim SKS, und die vorgeschlagenen Antworten, dürfen ebenfalls genutzt werden.
 
 - Buchtexte, Abbildungen und Fragensammlungen sind urheberrechtlich geschützt, Fragen entstehen deshalb in eigenen Worten
-- Jede Frage trägt einen Prüfstatus (ungeprüft / gegen Buch geprüft), damit fehlerhafte KI-Entwürfe nicht unbemerkt gelernt werden
+- Jede Frage trägt einen Prüfstatus (ungeprüft / geprüft), damit fehlerhafte KI-Entwürfe nicht unbemerkt gelernt werden; geprüft wird gegen die amtliche Antwort, bei eigenen Fragen gegen die angegebene Quelle
 - Eine Weitergabe der App mit SKS-Inhalten an andere Kursteilnehmer ist vorab zu klären, die Engine ohne Inhalte kann unabhängig davon geteilt werden
 - Amtliche Quellen (zum Beispiel Rechtstexte und amtliche Veröffentlichungen) können als Quelle genannt werden
 
@@ -168,7 +169,7 @@ Die App ist für den privaten Gebrauch gedacht, Inhalte aus dem Kursbuch dürfen
 Version 1 gilt als abgenommen, wenn alle Muss-Anforderungen erfüllt sind und die folgenden Prüfungen bestanden werden. Die Zahlen sind Vorschläge und lassen sich ändern.
 
 - Die App ist auf dem Smartphone installiert und läuft im Flugmodus vollständig
-- Das SKS-Modul enthält je Themengebiet mindestens 30 gegen das Buch geprüfte Fragen
+- Das SKS-Modul enthält je Themengebiet mindestens 30 Fragen, deren Kernpunkte gegen die amtliche Antwort geprüft sind (geändert am 20.11.2026, vorher „gegen das Buch geprüft“)
 - Eine Runde mit 10 Fragen ist in unter 8 Minuten durchspielbar
 - Falsch beantwortete Fragen erscheinen am Folgetag wieder
 - Export und anschließender Import auf einem zweiten Gerät stellt Streak, XP und Fächer wieder her
@@ -185,7 +186,7 @@ Nach Freigabe dieses Lastenhefts folgt der Projektplan mit Meilensteinen je Engi
 - [ ] Wo wird die App gehostet, und soll sie nur privat oder auch für andere Kursteilnehmer erreichbar sein? Antwort: privat, später auch für andere
 - [ ] Welche Kartenaufgaben sollen trotzdem abgebildet werden (zum Beispiel Kurs- und Peilungsberechnung als Rechenaufgabe)? Antwort: Ja, Kurs und Peilaufgaben auf SKS-Niveau. Dh mit Versatz Wind und Strömung.
 - [ ] Welches Tagesziel ist realistisch: eine Runde oder zwei? Antwort: Ein, aber man sollte mehr machen dürfen.
-- [ ] Gibt es zu den SKS-Freitextfragen eine amtliche Musterantwort, oder ist das Kursbuch die Quelle? Davon hängt die Kennzeichnung der Herkunft ab. Antwort: Wir starten nur mit den amtlichen, Buch ist bestellt. Also sollte vor Endabnahme noch eingearbeitet werden.
+- [ ] Gibt es zu den SKS-Freitextfragen eine amtliche Musterantwort, oder ist das Kursbuch die Quelle? Davon hängt die Kennzeichnung der Herkunft ab. Antwort: Wir starten nur mit den amtlichen, Buch ist bestellt. Also sollte vor Endabnahme noch eingearbeitet werden. Nachtrag 20.11.2026: Die amtlichen Antworten reichen; das Buch wurde für die Rechenwege (AP9B) gebraucht, ergänzende Erklärungen aus dem Buch kommen erst nach Version 1 und nur bei Bedarf.
 - [ ] KI-Bewertung (F-31): Welcher Proxy, welche Kosten, und lohnt sich der Aufwand erst nach Version 1? Antwort: Primär mal alles für mich.
 - [x] Rangfolge im SKS-Modul: wie viele Ränge, ab welchem Level, welche Bilder?
 
@@ -202,3 +203,4 @@ Diese Anforderungen sind erst während der Umsetzung entstanden und wurden nacht
 | 14.11.2026 | F-37 | Ränge im Inhaltsmodul statt in der Engine | Ränge sollen je Modul verschieden sein: SKS nautisch, andere Module eigene |
 | 14.11.2026 | F-36 | Platzhalter statt Rangbilder in Version 1 | Eigene Bilder brauchen Zeit und kommen später |
 | 14.11.2026 | F-38 | Eigene Rangbilder als Kann-Anforderung, jederzeit vorziehbar | Bilder entstehen mit Copilot; wichtig erst, wenn die Platzhalter beim Lernen stören |
+| 20.11.2026 | F-39 | Prüfstatus der Kernpunkte in der App umschalten | Kernpunkte werden gegen die amtliche Antwort geprüft statt gegen das Buch; das geht am einfachsten nebenbei beim Lernen |
