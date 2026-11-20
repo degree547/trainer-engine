@@ -172,7 +172,7 @@ Version 1 gilt als abgenommen, wenn alle Muss-Anforderungen erfüllt sind und di
 - Eine Runde mit 10 Fragen ist in unter 8 Minuten durchspielbar
 - Falsch beantwortete Fragen erscheinen am Folgetag wieder
 - Export und anschließender Import auf einem zweiten Gerät stellt Streak, XP und Fächer wieder her
-- Ein Testmodul mit 20 IAPP-Beispielfragen läuft, ohne dass die Engine geändert wird
+- Ein Testmodul mit 20 Fragen eines anderen Fachs (eigene Übungsfragen, alle Fragetypen) läuft, ohne dass die Engine geändert wird; die echten IAPP-Module (CIPP/E, AIGP) folgen nach Version 1 (geändert am 20.11.2026)
 - Eine Freitextfrage lässt sich beantworten, mit Musterantwort und Kernpunkten abgleichen und bestimmt das Leitner-Fach
 
 Nach Freigabe dieses Lastenhefts folgt der Projektplan mit Meilensteinen je Engine-Modul.
