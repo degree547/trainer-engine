@@ -1,0 +1,789 @@
+{
+  "_hinweis": "Rechenaufgaben für das SKS-Modul (F-28, AP9B). Rechenweg nach der Kursbeschickung MgK + Abl = mwK, + Mw = rwK, + BW = KdW, + BS = KüG (rechtsdrehend +, linksdrehend −); Ablenkung aus der amtlichen Steuertafel (steuertafel.json), vom Kompass aus nach der MgK-Spalte, zurück zum Kompass nach der mwK-Spalte, dazwischen linear gerechnet und kaufmännisch auf ganze Grad gerundet. Werte, die genau auf ,5 enden, werden nicht gezogen. Toleranzen wie in den amtlichen Lösungen (ELWIS). Freigegeben erst, wenn tests/ap9b-navigation.test.mjs grün ist.",
+  "wind": [
+    {
+      "wert": 0,
+      "text": "N"
+    },
+    {
+      "wert": 22.5,
+      "text": "NNO"
+    },
+    {
+      "wert": 45,
+      "text": "NO"
+    },
+    {
+      "wert": 67.5,
+      "text": "ONO"
+    },
+    {
+      "wert": 90,
+      "text": "O"
+    },
+    {
+      "wert": 112.5,
+      "text": "OSO"
+    },
+    {
+      "wert": 135,
+      "text": "SO"
+    },
+    {
+      "wert": 157.5,
+      "text": "SSO"
+    },
+    {
+      "wert": 180,
+      "text": "S"
+    },
+    {
+      "wert": 202.5,
+      "text": "SSW"
+    },
+    {
+      "wert": 225,
+      "text": "SW"
+    },
+    {
+      "wert": 247.5,
+      "text": "WSW"
+    },
+    {
+      "wert": 270,
+      "text": "W"
+    },
+    {
+      "wert": 292.5,
+      "text": "WNW"
+    },
+    {
+      "wert": 315,
+      "text": "NW"
+    },
+    {
+      "wert": 337.5,
+      "text": "NNW"
+    }
+  ],
+  "generatoren": [
+    {
+      "id": "sks-gen-kurs-mgk-rwk",
+      "titel": "Kursbeschickung: vom MgK zum rwK",
+      "frage": "Sie steuern MgK = {mgk:kurs}°. Die Missweisung beträgt Mw = {mw:vz}°.\nSteuertafel (Auszug): MgK {t1:tafel}° → Abl {a1:vz}°, MgK {t2:tafel}° → Abl {a2:vz}°.\nWie lautet der rechtweisende Kurs (rwK)?",
+      "variablen": {
+        "mgk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        }
+      },
+      "zwischenwerte": {
+        "t1": "floor(mgk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMgK(t1)",
+        "a2": "ablMgK(t2)",
+        "ablRoh": "ablMgK(mgk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mwk": "mod(mgk + abl, 360)",
+        "rwk": "mod(mwk + mw, 360)"
+      },
+      "bedingung": "halb - 0.01",
+      "loesung": "rwk",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Man rechnet von oben nach unten (Werte mit Vorzeichen addieren):\nMgK {mgk:kurs}°\nAbl {abl:vz}° (Steuertafel, MgK-Spalte: zwischen {t1:tafel}° und {t2:tafel}° linear gerechnet {ablR}°, gerundet)\nmwK {mwk:kurs}°\nMw {mw:vz}°\nrwK {rwk:kurs}°"
+    },
+    {
+      "id": "sks-gen-kurs-rwk-mgk",
+      "titel": "Kursbeschickung: vom rwK zum MgK",
+      "frage": "Sie wollen rwK = {rwk:kurs}° fahren. Die Missweisung beträgt Mw = {mw:vz}°.\nSteuertafel (Auszug): mwK {t1:tafel}° → Abl {a1:vz}°, mwK {t2:tafel}° → Abl {a2:vz}°.\nWelchen Magnetkompasskurs (MgK) müssen Sie steuern?",
+      "variablen": {
+        "rwk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        }
+      },
+      "zwischenwerte": {
+        "mwk": "mod(rwk - mw, 360)",
+        "t1": "floor(mwk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMwK(t1)",
+        "a2": "ablMwK(t2)",
+        "ablRoh": "ablMwK(mwk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mgk": "mod(mwk - abl, 360)"
+      },
+      "bedingung": "halb - 0.01",
+      "loesung": "mgk",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Man rechnet von unten nach oben (beim Zurückrechnen das Vorzeichen umkehren):\nMgK {mgk:kurs}°\nAbl {abl:vz}° (Steuertafel, mwK-Spalte: zwischen {t1:tafel}° und {t2:tafel}° linear gerechnet {ablR}°, gerundet)\nmwK {mwk:kurs}°\nMw {mw:vz}°\nrwK {rwk:kurs}°"
+    },
+    {
+      "id": "sks-gen-wind-kdw",
+      "titel": "Beschickung für Wind: vom MgK zum KdW",
+      "frage": "Sie steuern MgK = {mgk:kurs}° bei Wind aus {wind}. Die Beschickung für Wind schätzen Sie auf |BW| = {bwb}°. Mw = {mw:vz}°.\nSteuertafel (Auszug): MgK {t1:tafel}° → Abl {a1:vz}°, MgK {t2:tafel}° → Abl {a2:vz}°.\nMit welchem Kurs durchs Wasser (KdW) arbeiten Sie in der Karte?",
+      "variablen": {
+        "mgk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        },
+        "wind": {
+          "liste": "WIND"
+        },
+        "bwb": {
+          "von": 2,
+          "bis": 9
+        }
+      },
+      "zwischenwerte": {
+        "t1": "floor(mgk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMgK(t1)",
+        "a2": "ablMgK(t2)",
+        "ablRoh": "ablMgK(mgk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mwk": "mod(mgk + abl, 360)",
+        "rwk": "mod(mwk + mw, 360)",
+        "rel": "winkel(rwk, wind)",
+        "bw": "-sign(rel) * bwb",
+        "kdw": "mod(rwk + bw, 360)"
+      },
+      "bedingung": "min(halb - 0.01, abs(rel) - 30, 150 - abs(rel))",
+      "loesung": "kdw",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Man rechnet von oben nach unten (Werte mit Vorzeichen addieren):\nMgK {mgk:kurs}°\nAbl {abl:vz}° (Steuertafel, MgK-Spalte: {ablR}°, gerundet)\nmwK {mwk:kurs}°\nMw {mw:vz}°\nrwK {rwk:kurs}°\nBW {bw:vz}°\nKdW {kdw:kurs}°\nVorzeichen der BW: Der Wind aus {wind} kommt von {rel:vz}° gegenüber dem Kurs (positiv = von Steuerbord). Wind von Steuerbord versetzt nach Backbord (linksdrehend, BW −), Wind von Backbord versetzt nach Steuerbord (rechtsdrehend, BW +)."
+    },
+    {
+      "id": "sks-gen-wind-mgk",
+      "titel": "Beschickung für Wind: vom KdW zum MgK",
+      "frage": "In der Karte haben Sie den Kurs KdW = {kdw:kurs}° abgesetzt. Es weht Wind aus {wind}, Sie wollen |BW| = {bwb}° vorhalten. Mw = {mw:vz}°.\nSteuertafel (Auszug): mwK {t1:tafel}° → Abl {a1:vz}°, mwK {t2:tafel}° → Abl {a2:vz}°.\nWelchen Magnetkompasskurs (MgK) müssen Sie steuern?",
+      "variablen": {
+        "kdw": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        },
+        "wind": {
+          "liste": "WIND"
+        },
+        "bwb": {
+          "von": 2,
+          "bis": 9
+        }
+      },
+      "zwischenwerte": {
+        "rel": "winkel(kdw, wind)",
+        "bw": "-sign(rel) * bwb",
+        "rwk": "mod(kdw - bw, 360)",
+        "mwk": "mod(rwk - mw, 360)",
+        "t1": "floor(mwk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMwK(t1)",
+        "a2": "ablMwK(t2)",
+        "ablRoh": "ablMwK(mwk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mgk": "mod(mwk - abl, 360)"
+      },
+      "bedingung": "min(halb - 0.01, abs(rel) - 30, 150 - abs(rel))",
+      "loesung": "mgk",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Man rechnet von unten nach oben (beim Zurückrechnen das Vorzeichen umkehren):\nMgK {mgk:kurs}°\nAbl {abl:vz}° (Steuertafel, mwK-Spalte: {ablR}°, gerundet)\nmwK {mwk:kurs}°\nMw {mw:vz}°\nrwK {rwk:kurs}°\nBW {bw:vz}°\nKdW {kdw:kurs}°\nVorzeichen der BW: Der Wind aus {wind} kommt von {rel:vz}° gegenüber dem Kurs (positiv = von Steuerbord). Wind von Steuerbord versetzt nach Backbord (linksdrehend, BW −), Wind von Backbord versetzt nach Steuerbord (rechtsdrehend, BW +)."
+    },
+    {
+      "id": "sks-gen-peilung-mgp",
+      "titel": "Peilung: von der MgP zur rwP",
+      "frage": "Sie peilen ein Seezeichen über den Steuerkompass in MgP = {mgp:kurs}°, anliegender MgK = {mgk:kurs}°. Mw = {mw:vz}°.\nSteuertafel (Auszug): MgK {t1:tafel}° → Abl {a1:vz}°, MgK {t2:tafel}° → Abl {a2:vz}°.\nWie lautet die rechtweisende Peilung (rwP)?",
+      "variablen": {
+        "mgp": {
+          "von": 0,
+          "bis": 359
+        },
+        "mgk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        }
+      },
+      "zwischenwerte": {
+        "t1": "floor(mgk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMgK(t1)",
+        "a2": "ablMgK(t2)",
+        "ablRoh": "ablMgK(mgk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mwp": "mod(mgp + abl, 360)",
+        "rwp": "mod(mwp + mw, 360)"
+      },
+      "bedingung": "halb - 0.01",
+      "loesung": "rwp",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Die Ablenkung gilt für den anliegenden Kurs, nicht für die Peilung.\nMgP {mgp:kurs}°\nAbl {abl:vz}° (Steuertafel für MgK {mgk:kurs}°: {ablR}°, gerundet)\nmwP {mwp:kurs}°\nMw {mw:vz}°\nrwP {rwp:kurs}°"
+    },
+    {
+      "id": "sks-gen-peilung-sp",
+      "titel": "Peilung: von der Seitenpeilung zur rwP",
+      "frage": "Sie peilen ein Seezeichen mit dem Radar in Radar-Seitenpeilung RaSP = {sp:kurs}° (vom Bug rechtsherum gezählt), anliegender MgK = {mgk:kurs}°. Mw = {mw:vz}°.\nSteuertafel (Auszug): MgK {t1:tafel}° → Abl {a1:vz}°, MgK {t2:tafel}° → Abl {a2:vz}°.\nWie lautet die rechtweisende Peilung (rwP)?",
+      "variablen": {
+        "sp": {
+          "von": 0,
+          "bis": 359
+        },
+        "mgk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        }
+      },
+      "zwischenwerte": {
+        "t1": "floor(mgk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMgK(t1)",
+        "a2": "ablMgK(t2)",
+        "ablRoh": "ablMgK(mgk)",
+        "ablR": "round(ablRoh, 1)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mwk": "mod(mgk + abl, 360)",
+        "rwk": "mod(mwk + mw, 360)",
+        "rwp": "mod(sp + rwk, 360)"
+      },
+      "bedingung": "halb - 0.01",
+      "loesung": "rwp",
+      "toleranz": 0,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "1. Schritt, den anliegenden Kurs beschicken:\nMgK {mgk:kurs}° + Abl {abl:vz}° (Steuertafel: {ablR}°, gerundet) = mwK {mwk:kurs}°, + Mw {mw:vz}° = rwK {rwk:kurs}°\n2. Schritt: RaSP {sp:kurs}° + rwK {rwk:kurs}° = rwP {rwp:kurs}° (über 360° hinaus 360° abziehen)"
+    },
+    {
+      "id": "sks-gen-ablenkung-kontrolle",
+      "titel": "Kontrolle der Ablenkung mit einer Deckpeilung",
+      "frage": "Sie richten den Bug genau auf eine Deckpeilung aus, die laut Karte rwP = {rwp:kurs}° hat. Der Steuerkompass zeigt dabei MgK = {mgk:kurs}°. Mw = {mw:vz}°.\nWie groß ist die Ablenkung (Abl) auf diesem Kurs? Geben Sie das Vorzeichen mit an.",
+      "variablen": {
+        "mgk": {
+          "von": 0,
+          "bis": 359
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        },
+        "abl": {
+          "von": -12,
+          "bis": 12
+        }
+      },
+      "zwischenwerte": {
+        "rwp": "mod(mgk + abl + mw, 360)",
+        "mwp": "mod(rwp - mw, 360)"
+      },
+      "loesung": "abl",
+      "toleranz": 0,
+      "einheit": "°",
+      "erklaerung": "Bei einer Deckpeilung ist MgP = MgK.\nrwP {rwp:kurs}°\n− Mw {mw:vz}°\n= mwP {mwp:kurs}°\nAbl = mwP − MgP = {mwp:kurs}° − {mgk:kurs}° = {loesung:vz}°"
+    },
+    {
+      "id": "sks-gen-missweisung",
+      "titel": "Missweisung auf das laufende Jahr umrechnen",
+      "frage": "In der Seekarte steht bei Ihrem Schiffsort: Missweisung {mwg}° {mwm}′ {mwri} ({jahr0}), jährliche Änderung {aend}′ {aendri}.\nWie groß ist die Missweisung im Jahr {jahr1}? Geben Sie sie in Bogenminuten an: Ost positiv, West negativ (z. B. −110 für 1° 50′ W).",
+      "variablen": {
+        "mwg": {
+          "von": 0,
+          "bis": 3
+        },
+        "mwm": {
+          "von": 0,
+          "bis": 55,
+          "schritt": 5
+        },
+        "mwri": {
+          "liste": [
+            {
+              "wert": 1,
+              "text": "E"
+            },
+            {
+              "wert": -1,
+              "text": "W"
+            }
+          ]
+        },
+        "aend": {
+          "von": 2,
+          "bis": 20
+        },
+        "aendri": {
+          "liste": [
+            {
+              "wert": 1,
+              "text": "E"
+            },
+            {
+              "wert": -1,
+              "text": "W"
+            }
+          ]
+        },
+        "jahr0": {
+          "von": 2008,
+          "bis": 2020
+        },
+        "jahre": {
+          "von": 1,
+          "bis": 8
+        }
+      },
+      "zwischenwerte": {
+        "jahr1": "jahr0 + jahre",
+        "alt": "mwri * (mwg * 60 + mwm)",
+        "summe": "aendri * aend * jahre"
+      },
+      "bedingung": "abs(mwg * 60 + mwm)",
+      "loesung": "alt + summe",
+      "toleranz": 0,
+      "einheit": "′",
+      "erklaerung": "Missweisung {jahr0}: {alt:vz}′ (Ost +, West −)\nÄnderung für {jahre} Jahre: {jahre} × {aend}′ {aendri} = {summe:vz}′\nMissweisung {jahr1}: {loesung:vz}′\nZum Rechnen im Kurs rundet man auf ganze Grad (60′ = 1°)."
+    },
+    {
+      "id": "sks-gen-strom1-kueg",
+      "titel": "1. Stromaufgabe: Kurs über Grund",
+      "frage": "Sie steuern KdW = {kdw:kurs}° mit FdW = {fdw} kn (Log). Der Strom setzt laut Stromatlas {str:kurs}° mit {stg} kn.\nWelchen Kurs über Grund (KüG) machen Sie?",
+      "variablen": {
+        "kdw": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 3,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 3,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "x": "fdw * sin(kdw) + stg * sin(str)",
+        "y": "fdw * cos(kdw) + stg * cos(str)",
+        "kueg": "mod(round(atan2(x, y)), 360)",
+        "fueg": "round(sqrt(x ^ 2 + y ^ 2), 1)",
+        "bs": "winkel(kdw, kueg)"
+      },
+      "bedingung": "abs(winkel(kdw, str)) - 15",
+      "loesung": "kueg",
+      "toleranz": 1,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Stromdreieck: Vom Punkt A den Vektor KdW {kdw:kurs}° mit der Länge FdW {fdw} kn antragen, an seiner Spitze den Strom {str:kurs}° mit {stg} kn. Die Verbindung von A zur Spitze des Strompfeils ergibt KüG {kueg:kurs}° und FüG {fueg} kn.\nBS = {bs:vz}°. Toleranz wie in der Prüfung: ±1°."
+    },
+    {
+      "id": "sks-gen-strom1-fueg",
+      "titel": "1. Stromaufgabe: Fahrt über Grund",
+      "frage": "Sie steuern KdW = {kdw:kurs}° mit FdW = {fdw} kn (Log). Der Strom setzt laut Stromatlas {str:kurs}° mit {stg} kn.\nWie groß ist Ihre Fahrt über Grund (FüG)?",
+      "variablen": {
+        "kdw": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 3,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 3,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "x": "fdw * sin(kdw) + stg * sin(str)",
+        "y": "fdw * cos(kdw) + stg * cos(str)",
+        "kueg": "mod(round(atan2(x, y)), 360)"
+      },
+      "loesung": "sqrt(x ^ 2 + y ^ 2)",
+      "nachkommastellen": 1,
+      "toleranz": 0.1,
+      "einheit": "kn",
+      "erklaerung": "Stromdreieck: KdW {kdw:kurs}° / {fdw} kn plus Strom {str:kurs}° / {stg} kn ergibt KüG {kueg:kurs}° und FüG {loesung} kn (die Länge der offenen Dreiecksseite). Toleranz wie in der Prüfung: ±0,1 kn."
+    },
+    {
+      "id": "sks-gen-strom2-kdw",
+      "titel": "2. Stromaufgabe: Kurs durchs Wasser",
+      "frage": "Sie wollen über Grund KüG = {kueg:kurs}° laufen. Ihre Fahrt durchs Wasser beträgt FdW = {fdw} kn, der Strom setzt {str:kurs}° mit {stg} kn. Wind bleibt unberücksichtigt (BW = 0°).\nWelchen Kurs durchs Wasser (KdW) müssen Sie steuern?",
+      "variablen": {
+        "kueg": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2.5,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "d": "winkel(kueg, str)",
+        "a": "asin(-stg * sin(d) / fdw)",
+        "kdw": "mod(round(kueg + a), 360)",
+        "fueg": "round(fdw * cos(a) + stg * cos(d), 1)",
+        "bs": "winkel(kdw, kueg)"
+      },
+      "bedingung": "min(0.6 * fdw - stg, fueg - 1, abs(d) - 15, 165 - abs(d))",
+      "loesung": "kdw",
+      "toleranz": 1,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Stromdreieck: Vom Punkt A die Kurslinie KüG {kueg:kurs}° zeichnen und in A den Strom {str:kurs}° / {stg} kn antragen (Punkt B). Um B einen Kreisbogen mit dem Radius FdW {fdw} kn schlagen; er schneidet die Kurslinie in C. BC ist der KdW {kdw:kurs}°, AC die FüG {fueg} kn.\nBS = {bs:vz}°. Toleranz wie in der Prüfung: ±1°."
+    },
+    {
+      "id": "sks-gen-strom2-mgk",
+      "titel": "2. Stromaufgabe: Magnetkompasskurs",
+      "frage": "Sie wollen über Grund KaK = {kueg:kurs}° laufen. FdW = {fdw} kn, Strom {str:kurs}° mit {stg} kn. Wind aus {wind}, Sie halten |BW| = {bwb}° vor. Mw = {mw:vz}°.\nSteuertafel (Auszug): mwK {t1:tafel}° → Abl {a1:vz}°, mwK {t2:tafel}° → Abl {a2:vz}°.\nWelchen Magnetkompasskurs (MgK) müssen Sie steuern?",
+      "variablen": {
+        "kueg": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2.5,
+          "schritt": 0.1
+        },
+        "wind": {
+          "liste": "WIND"
+        },
+        "bwb": {
+          "von": 2,
+          "bis": 7
+        },
+        "mw": {
+          "von": -5,
+          "bis": 5
+        }
+      },
+      "zwischenwerte": {
+        "d": "winkel(kueg, str)",
+        "a": "asin(-stg * sin(d) / fdw)",
+        "kdw": "mod(round(kueg + a), 360)",
+        "bs": "winkel(kdw, kueg)",
+        "rel": "winkel(kdw, wind)",
+        "bw": "-sign(rel) * bwb",
+        "rwk": "mod(kdw - bw, 360)",
+        "mwk": "mod(rwk - mw, 360)",
+        "t1": "floor(mwk / 10) * 10",
+        "t2": "t1 + 10",
+        "a1": "ablMwK(t1)",
+        "a2": "ablMwK(t2)",
+        "ablRoh": "ablMwK(mwk)",
+        "abl": "round(ablRoh)",
+        "halb": "abs(abs(ablRoh) - floor(abs(ablRoh)) - 0.5)",
+        "mgk": "mod(mwk - abl, 360)"
+      },
+      "bedingung": "min(0.6 * fdw - stg, abs(d) - 15, 165 - abs(d), halb - 0.01, abs(rel) - 30, 150 - abs(rel))",
+      "loesung": "mgk",
+      "toleranz": 1,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "1. Stromdreieck (Kreisbogen mit Radius FdW um die Spitze des Strompfeils): KdW {kdw:kurs}°, BS = {bs:vz}°.\n2. Man rechnet von unten nach oben (beim Zurückrechnen das Vorzeichen umkehren):\nMgK {mgk:kurs}°\nAbl {abl:vz}° (Steuertafel, mwK-Spalte)\nmwK {mwk:kurs}°\nMw {mw:vz}°\nrwK {rwk:kurs}°\nBW {bw:vz}°\nKdW {kdw:kurs}°\nVorzeichen der BW: Der Wind aus {wind} kommt von {rel:vz}° gegenüber dem Kurs (positiv = von Steuerbord). Wind von Steuerbord versetzt nach Backbord (linksdrehend, BW −), Wind von Backbord versetzt nach Steuerbord (rechtsdrehend, BW +).\nToleranz wie in der Prüfung: ±1°."
+    },
+    {
+      "id": "sks-gen-strom2-fueg",
+      "titel": "2. Stromaufgabe: Fahrt über Grund",
+      "frage": "Sie wollen über Grund KüG = {kueg:kurs}° laufen. Ihre Fahrt durchs Wasser beträgt FdW = {fdw} kn, der Strom setzt {str:kurs}° mit {stg} kn.\nWie groß ist die Fahrt über Grund (FüG)?",
+      "variablen": {
+        "kueg": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2.5,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "d": "winkel(kueg, str)",
+        "a": "asin(-stg * sin(d) / fdw)",
+        "kdw": "mod(round(kueg + a), 360)",
+        "fueg": "fdw * cos(a) + stg * cos(d)"
+      },
+      "bedingung": "min(0.6 * fdw - stg, fueg - 1, abs(d) - 15, 165 - abs(d))",
+      "loesung": "fueg",
+      "nachkommastellen": 1,
+      "toleranz": 0.1,
+      "einheit": "kn",
+      "erklaerung": "Stromdreieck: Kurslinie KüG {kueg:kurs}°, in A den Strom {str:kurs}° / {stg} kn antragen (B), Kreisbogen um B mit Radius FdW {fdw} kn schneidet die Kurslinie in C. BC ist der KdW {kdw:kurs}°, die Länge AC die FüG {loesung} kn. Toleranz wie in der Prüfung: ±0,1 kn."
+    },
+    {
+      "id": "sks-gen-strom2-zeit",
+      "titel": "2. Stromaufgabe: Zeit bis zum Ziel",
+      "frage": "Eine Tonne liegt {dist} sm entfernt in KüG = {kueg:kurs}°. FdW = {fdw} kn, der Strom setzt {str:kurs}° mit {stg} kn.\nNach wie vielen Minuten erreichen Sie die Tonne?",
+      "variablen": {
+        "dist": {
+          "von": 3,
+          "bis": 20,
+          "schritt": 0.5
+        },
+        "kueg": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 8,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2.5,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "d": "winkel(kueg, str)",
+        "a": "asin(-stg * sin(d) / fdw)",
+        "kdw": "mod(round(kueg + a), 360)",
+        "fueg": "round(fdw * cos(a) + stg * cos(d), 1)"
+      },
+      "bedingung": "min(0.6 * fdw - stg, fueg - 1, abs(d) - 15, 165 - abs(d))",
+      "loesung": "dist * 60 / fueg",
+      "nachkommastellen": 0,
+      "toleranz": 1,
+      "einheit": "min",
+      "erklaerung": "Aus dem Stromdreieck: KdW {kdw:kurs}°, FüG {fueg} kn.\nt (min) = d (sm) × 60 / FüG (kn) = {dist} × 60 / {fueg} = {loesung} min"
+    },
+    {
+      "id": "sks-gen-strom3-str",
+      "titel": "3. Stromaufgabe: Stromrichtung",
+      "frage": "Sie steuern KdW = {kdw:kurs}° mit FdW = {fdw} kn (BW = 0°). Nach {dauer} Stunden ergibt eine Peilung den beobachteten Ort: vom Ausgangspunkt aus KüG = {kuegR:kurs}° in {duegR} sm Abstand.\nIn welche Richtung (StR) setzt der Strom?",
+      "variablen": {
+        "kdw": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 7,
+          "schritt": 0.5
+        },
+        "dauer": {
+          "von": 1,
+          "bis": 3,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "dzw": "fdw * dauer",
+        "okx": "dzw * sin(kdw)",
+        "oky": "dzw * cos(kdw)",
+        "obx0": "okx + stg * dauer * sin(str)",
+        "oby0": "oky + stg * dauer * cos(str)",
+        "kuegR": "mod(round(atan2(obx0, oby0)), 360)",
+        "duegR": "round(sqrt(obx0 ^ 2 + oby0 ^ 2), 1)",
+        "bvx": "duegR * sin(kuegR) - okx",
+        "bvy": "duegR * cos(kuegR) - oky",
+        "bvR": "mod(round(atan2(bvx, bvy)), 360)",
+        "bvD": "round(sqrt(bvx ^ 2 + bvy ^ 2), 1)",
+        "stgR": "round(sqrt(bvx ^ 2 + bvy ^ 2) / dauer, 1)"
+      },
+      "bedingung": "min(stg * dauer - 0.8, abs(winkel(kdw, str)) - 15)",
+      "loesung": "atan2(bvx, bvy)",
+      "nachkommastellen": 0,
+      "toleranz": 5,
+      "einheit": "°",
+      "kreis": 360,
+      "erklaerung": "Koppelort Ok: {dzw} sm (FdW × Zeit) auf KdW {kdw:kurs}° vom Ausgangspunkt. Die Verbindung von Ok zum beobachteten Ort Ob ist die Besteckversetzung BV = {bvR:kurs}° / {bvD} sm.\nDie Richtung der BV ist die Stromrichtung: StR = {loesung:kurs}°; die Stärke ist BV-Distanz / Zeit = {bvD} / {dauer} ≈ {stgR} kn.\nToleranz: ±5° wie in vergleichbaren amtlichen Lösungen."
+    },
+    {
+      "id": "sks-gen-strom3-stg",
+      "titel": "3. Stromaufgabe: Stromstärke",
+      "frage": "Sie steuern KdW = {kdw:kurs}° mit FdW = {fdw} kn (BW = 0°). Nach {dauer} Stunden ergibt eine Peilung den beobachteten Ort: vom Ausgangspunkt aus KüG = {kuegR:kurs}° in {duegR} sm Abstand.\nMit welcher Stärke (StG) setzt der Strom?",
+      "variablen": {
+        "kdw": {
+          "von": 0,
+          "bis": 359
+        },
+        "fdw": {
+          "von": 4,
+          "bis": 7,
+          "schritt": 0.5
+        },
+        "dauer": {
+          "von": 1,
+          "bis": 3,
+          "schritt": 0.5
+        },
+        "str": {
+          "von": 0,
+          "bis": 355,
+          "schritt": 5
+        },
+        "stg": {
+          "von": 0.5,
+          "bis": 2,
+          "schritt": 0.1
+        }
+      },
+      "zwischenwerte": {
+        "dzw": "fdw * dauer",
+        "okx": "dzw * sin(kdw)",
+        "oky": "dzw * cos(kdw)",
+        "obx0": "okx + stg * dauer * sin(str)",
+        "oby0": "oky + stg * dauer * cos(str)",
+        "kuegR": "mod(round(atan2(obx0, oby0)), 360)",
+        "duegR": "round(sqrt(obx0 ^ 2 + oby0 ^ 2), 1)",
+        "bvx": "duegR * sin(kuegR) - okx",
+        "bvy": "duegR * cos(kuegR) - oky",
+        "bvR": "mod(round(atan2(bvx, bvy)), 360)",
+        "bvD": "round(sqrt(bvx ^ 2 + bvy ^ 2), 1)"
+      },
+      "bedingung": "min(stg * dauer - 0.8, abs(winkel(kdw, str)) - 15)",
+      "loesung": "sqrt(bvx ^ 2 + bvy ^ 2) / dauer",
+      "nachkommastellen": 1,
+      "toleranz": 0.2,
+      "einheit": "kn",
+      "erklaerung": "Koppelort Ok: {dzw} sm auf KdW {kdw:kurs}°. Ok → Ob ist die Besteckversetzung BV = {bvR:kurs}° / {bvD} sm.\nStG = BV-Distanz / Zeit = {bvD} sm / {dauer} h ≈ {loesung} kn.\nToleranz: ±0,2 kn wie in vergleichbaren amtlichen Lösungen."
+    },
+    {
+      "id": "sks-gen-strom-versetzung",
+      "titel": "Stromstärke aus der Versetzung",
+      "frage": "Auf Ihrem Kurs wurden Sie in {minuten} Minuten um {bv} sm versetzt.\nWie groß ist die Stromstärke (StG)?",
+      "variablen": {
+        "bv": {
+          "von": 0.5,
+          "bis": 5,
+          "schritt": 0.1
+        },
+        "minuten": {
+          "von": 30,
+          "bis": 180,
+          "schritt": 10
+        }
+      },
+      "loesung": "bv * 60 / minuten",
+      "nachkommastellen": 1,
+      "toleranz": 0.1,
+      "einheit": "kn",
+      "erklaerung": "StG = Versetzung / Zeit = {bv} sm × 60 / {minuten} min = {loesung} kn"
+    },
+    {
+      "id": "sks-gen-distanz",
+      "titel": "Distanz aus Fahrt und Zeit",
+      "frage": "Sie laufen {minuten} Minuten lang mit {fahrt} kn über Grund.\nWelche Distanz legen Sie zurück?",
+      "variablen": {
+        "fahrt": {
+          "von": 3,
+          "bis": 9,
+          "schritt": 0.5
+        },
+        "minuten": {
+          "von": 10,
+          "bis": 180,
+          "schritt": 5
+        }
+      },
+      "loesung": "fahrt * minuten / 60",
+      "nachkommastellen": 1,
+      "toleranz": 0.1,
+      "einheit": "sm",
+      "erklaerung": "d (sm) = FüG (kn) × t (min) / 60 = {fahrt} × {minuten} / 60 = {loesung} sm"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ function ortstext(f) {
   if (ort.art === 'rang') teile.push(t('fehler.ortRang', ort));
   if (ort.art === 'pruefung') teile.push(t('fehler.ortPruefung'));
   if (ort.art === 'generator') teile.push(t(ort.id ? 'fehler.ortGeneratorId' : 'fehler.ortGenerator', ort));
+  if (ort.art === 'tabelle') teile.push(t('fehler.ortTabelle', ort));
   return teile.join(' · ');
 }
 

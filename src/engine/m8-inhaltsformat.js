@@ -45,13 +45,21 @@
 //   (mindestens eine, je "von" ≤ "bis", optional "schritt" > 0), "loesung" (Formel aus
 //   Variablen), optional "nachkommastellen" (ganze Zahl ab 0), "toleranz", "einheit",
 //   optional "kreis", "erklaerung" (Platzhalter für Variablen und {loesung}), "quelle",
-//   optional "herkunft", optional "hinweis". Die Formel wird mit den kleinsten und
-//   größten Werten probegerechnet; ergibt sie keine Zahl, ist das ein Fehler.
+//   optional "herkunft", optional "hinweis". Eine Variable hat statt "von"/"bis" auch eine
+//   "liste" (mindestens ein Eintrag: Zahl oder { "wert": Zahl, optional "text" }).
+//   Optional "zwischenwerte" ({ name: Formel }, der Reihe nach; nur Variablen, frühere
+//   Zwischenwerte und Tabellen) und "bedingung" (Formel). Probegerechnet wird mit
+//   festen Zufallsfolgen: Mindestens eine Ziehung muss die Bedingung erfüllen, und jede
+//   Ziehung, die sie erfüllt, muss eine Lösung ergeben.
+//
+// Tabellen: optional "tabellen": { name: { "von", "schritt" (> 0), "werte" (mindestens zwei
+//   Zahlen), optional "kreis" (> 0), optional "quelle", optional "herkunft" } }. Formeln rufen
+//   sie als name(x) auf (siehe M9).
 //
 // Fehler sind Objekte { code, zeile, ort, werte }; die Texte zu den Codes stehen in src/i18n.
 
-import { leseFormel, namenIn, platzhalterIn, rechne, wertebereich, FormelFehler, FUNKTIONEN, KONSTANTEN }
-  from './m9-generatoren.js';
+import { leseFormel, namenIn, platzhalterIn, rechne, wertebereich, zieheMitZwischenwerten,
+  FormelFehler, FUNKTIONEN, KONSTANTEN } from './m9-generatoren.js';
 
 export const FORMAT_VERSION = 1;
 export const FRAGETYPEN = ['mc', 'freitext', 'zahl'];
@@ -302,11 +310,13 @@ export function pruefeModul(daten, zeilen = new Map()) {
     });
   }
 
+  const tabellen = daten.tabellen === undefined ? {} : pruefeTabellen(daten.tabellen, { melde });
+
   if (daten.generatoren !== undefined) {
     const praefix = istObjekt(meta) && typeof meta.id === 'string' && ID_MUSTER.test(meta.id) ? `${meta.id}-` : null;
     const belegt = new Set((Array.isArray(daten.fragen) ? daten.fragen : [])
       .filter((f) => istObjekt(f) && typeof f.id === 'string').map((f) => f.id));
-    pruefeGeneratoren(daten.generatoren, { melde, themenIds, praefix, belegt,
+    pruefeGeneratoren(daten.generatoren, { melde, themenIds, praefix, belegt, tabellen,
       themenGeprueft: Array.isArray(daten.themen) });
   }
 
@@ -556,12 +566,19 @@ function pruefeGeneratoren(generatoren, k) {
     } else {
       for (const [name, bereich] of Object.entries(g.variablen)) {
         const vpfad = `${pfad}.variablen.${name}`;
-        if (!VARIABLEN_MUSTER.test(name) || Object.hasOwn(FUNKTIONEN, name) || Object.hasOwn(KONSTANTEN, name) || name === 'loesung') {
+        if (!VARIABLEN_MUSTER.test(name) || Object.hasOwn(FUNKTIONEN, name) || Object.hasOwn(KONSTANTEN, name) || name === 'loesung'
+          || Object.hasOwn(k.tabellen ?? {}, name)) {
           melde('inhalt.variablenName', vpfad, ort, { wert: name });
           variablenOk = false;
           continue;
         }
         namen.add(name);
+        if (istObjekt(bereich) && bereich.liste !== undefined) {
+          const ok = Array.isArray(bereich.liste) && bereich.liste.length > 0 && bereich.liste.every((e) => istZahl(e)
+            || (istObjekt(e) && istZahl(e.wert) && (e.text === undefined || istText(e.text))));
+          if (!ok) { melde('inhalt.variablenListe', vpfad, ort, { name }); variablenOk = false; }
+          continue;
+        }
         if (!istObjekt(bereich) || !istZahl(bereich.von) || !istZahl(bereich.bis)) {
           melde('inhalt.variablenBereich', vpfad, ort, { name });
           variablenOk = false;
@@ -575,9 +592,52 @@ function pruefeGeneratoren(generatoren, k) {
       }
     }
 
-    // Platzhalter nur für bekannte Variablen (in der Erklärung auch {loesung}).
+    // Formeln lesen: nur bekannte Variablen, frühere Zwischenwerte und Tabellen des Moduls.
+    const tabellenNamen = new Set(Object.keys(k.tabellen ?? {}));
+    const liesFormel = (formel, feldPfad, bekannt) => {
+      let baum;
+      try {
+        baum = leseFormel(formel, { tabellen: tabellenNamen });
+      } catch (e) {
+        if (!(e instanceof FormelFehler)) throw e;
+        melde('inhalt.formelFehler', feldPfad, ort, { formel: String(formel) });
+        return null;
+      }
+      if (!variablenOk) return null;
+      const fremd = [...namenIn(baum)].filter((n) => !bekannt.has(n));
+      if (fremd.length > 0) { melde('inhalt.formelVariable', feldPfad, ort, { name: fremd.join(', ') }); return null; }
+      return baum;
+    };
+
+    // Zwischenwerte der Reihe nach.
+    const bekannt = new Set(namen);
+    let formelnOk = variablenOk;
+    if (g.zwischenwerte !== undefined) {
+      if (!istObjekt(g.zwischenwerte)) {
+        melde('inhalt.keinObjekt', `${pfad}.zwischenwerte`, ort, { feld: 'zwischenwerte' });
+        formelnOk = false;
+      } else {
+        for (const [name, formel] of Object.entries(g.zwischenwerte)) {
+          const zpfad = `${pfad}.zwischenwerte.${name}`;
+          if (!VARIABLEN_MUSTER.test(name) || Object.hasOwn(FUNKTIONEN, name) || Object.hasOwn(KONSTANTEN, name)
+            || name === 'loesung' || bekannt.has(name) || tabellenNamen.has(name)) {
+            melde('inhalt.variablenName', zpfad, ort, { wert: name });
+            formelnOk = false;
+            continue;
+          }
+          if (typeof formel !== 'string' || !liesFormel(formel, zpfad, bekannt)) formelnOk = false;
+          bekannt.add(name);
+        }
+      }
+    }
+    if (g.bedingung !== undefined && (typeof g.bedingung !== 'string' || !liesFormel(g.bedingung, `${pfad}.bedingung`, bekannt))) {
+      if (typeof g.bedingung !== 'string') melde('inhalt.formelFehler', `${pfad}.bedingung`, ort, { formel: String(g.bedingung) });
+      formelnOk = false;
+    }
+
+    // Platzhalter nur für bekannte Variablen und Zwischenwerte (in der Erklärung auch {loesung}).
     if (variablenOk) {
-      for (const [feld, erlaubt] of [['frage', namen], ['erklaerung', new Set([...namen, 'loesung'])]]) {
+      for (const [feld, erlaubt] of [['frage', bekannt], ['erklaerung', new Set([...bekannt, 'loesung'])]]) {
         if (typeof g[feld] !== 'string') continue;
         for (const name of platzhalterIn(g[feld])) {
           if (!erlaubt.has(name)) melde('inhalt.platzhalterUnbekannt', `${pfad}.${feld}`, ort, { feld, name });
@@ -585,34 +645,94 @@ function pruefeGeneratoren(generatoren, k) {
       }
     }
 
-    // Lösungsformel: lesbar, nur bekannte Variablen, mit kleinsten und größten Werten berechenbar.
+    // Lösungsformel: lesbar, nur bekannte Namen, probegerechnet.
     if (g.loesung === undefined) { melde('inhalt.feldFehlt', `${pfad}.loesung`, ort, { feld: 'loesung' }); return; }
-    let baum;
-    try {
-      baum = leseFormel(g.loesung);
-    } catch (e) {
-      if (!(e instanceof FormelFehler)) throw e;
-      melde('inhalt.formelFehler', `${pfad}.loesung`, ort, { formel: String(g.loesung) });
-      return;
-    }
-    if (!variablenOk) return;
-    const fremd = [...namenIn(baum)].filter((n) => !namen.has(n));
-    if (fremd.length > 0) { melde('inhalt.formelVariable', `${pfad}.loesung`, ort, { name: fremd.join(', ') }); return; }
-    for (const ende of ['von', 'bis']) {
-      const werte = {};
-      for (const [name, bereich] of Object.entries(g.variablen)) {
-        const { anzahl, wert } = wertebereich(bereich);
-        werte[name] = ende === 'von' ? wert(0) : wert(anzahl - 1);
+    if (typeof g.loesung !== 'string') { melde('inhalt.formelFehler', `${pfad}.loesung`, ort, { formel: String(g.loesung) }); return; }
+    const baum = liesFormel(g.loesung, `${pfad}.loesung`, bekannt);
+    if (!baum || !formelnOk) return;
+
+    const tabellen = k.tabellen ?? {};
+    const rechneAlles = (werte) => rechne(baum, zieheMitZwischenwerten(g, { werte, tabellen }).alle, tabellen);
+    if (g.bedingung === undefined) {
+      // Kleinste und größte Werte.
+      for (const ende of ['von', 'bis']) {
+        const werte = {};
+        for (const [name, bereich] of Object.entries(g.variablen)) {
+          const { anzahl, wert } = wertebereich(bereich);
+          werte[name] = ende === 'von' ? wert(0) : wert(anzahl - 1);
+        }
+        try {
+          rechneAlles(werte);
+        } catch (e) {
+          if (!(e instanceof FormelFehler)) throw e;
+          melde('inhalt.formelKeinErgebnis', `${pfad}.loesung`, ort, { ende });
+          return;
+        }
       }
+    }
+    // Feste Zufallsfolge: 200 Ziehungen, gezählt werden die, welche die Bedingung erfüllen.
+    const zufall = zufallsfolge(1);
+    let erfuellt = 0;
+    for (let i = 0; i < 200; i += 1) {
       try {
-        rechne(baum, werte);
+        const { alle } = zieheMitZwischenwerten(g, { zufall, tabellen, versuche: 1 });
+        erfuellt += 1;
+        rechne(baum, alle, tabellen);
       } catch (e) {
         if (!(e instanceof FormelFehler)) throw e;
-        melde('inhalt.formelKeinErgebnis', `${pfad}.loesung`, ort, { ende });
+        if (e.code === 'formel.bedingungNieErfuellt') continue;
+        melde('inhalt.formelKeinErgebnis', `${pfad}.loesung`, ort, { ende: 'zufall' });
         return;
       }
     }
+    if (erfuellt === 0) melde('inhalt.bedingungNieErfuellt', `${pfad}.bedingung`, ort);
   });
+}
+
+/** Einfache, feste Zufallsfolge (gleiche Zahl → gleiche Folge) für Probeberechnungen. */
+function zufallsfolge(start) {
+  let z = start >>> 0;
+  return () => {
+    z = (Math.imul(z, 1664525) + 1013904223) >>> 0;
+    return z / 2 ** 32;
+  };
+}
+
+/** Prüft "tabellen" und gibt die gültigen Tabellen zurück (für die Formeln der Generatoren). */
+function pruefeTabellen(tabellen, { melde }) {
+  const gueltig = {};
+  if (!istObjekt(tabellen)) {
+    melde('inhalt.keinObjekt', 'tabellen', { art: 'modul' }, { feld: 'tabellen' });
+    return gueltig;
+  }
+  for (const [name, t] of Object.entries(tabellen)) {
+    const pfad = `tabellen.${name}`;
+    const ort = { art: 'tabelle', id: name };
+    if (!VARIABLEN_MUSTER.test(name) || Object.hasOwn(FUNKTIONEN, name) || Object.hasOwn(KONSTANTEN, name) || name === 'loesung') {
+      melde('inhalt.variablenName', pfad, ort, { wert: name });
+      continue;
+    }
+    if (!istObjekt(t)) { melde('inhalt.keinObjekt', pfad, ort, { feld: name }); continue; }
+    let ok = true;
+    if (!istZahl(t.von)) { melde('inhalt.feldFehlt', `${pfad}.von`, ort, { feld: 'von' }); ok = false; }
+    if (!istZahl(t.schritt) || t.schritt <= 0) { melde('inhalt.zahlGroesser', `${pfad}.schritt`, ort, { feld: 'schritt', min: 0 }); ok = false; }
+    if (!Array.isArray(t.werte) || t.werte.length < 2 || !t.werte.every(istZahl)) {
+      melde('inhalt.tabelleWerte', `${pfad}.werte`, ort, { name });
+      ok = false;
+    }
+    if (t.kreis !== undefined && (!istZahl(t.kreis) || t.kreis <= 0)) {
+      melde('inhalt.zahlGroesser', `${pfad}.kreis`, ort, { feld: 'kreis', min: 0 });
+      ok = false;
+    }
+    if (t.quelle !== undefined && !istText(t.quelle)) { melde('inhalt.keinText', `${pfad}.quelle`, ort, { feld: 'quelle' }); ok = false; }
+    if (t.herkunft !== undefined && !HERKUENFTE.includes(t.herkunft)) {
+      melde('inhalt.wertNichtErlaubt', `${pfad}.herkunft`, ort,
+        { feld: 'herkunft', wert: String(t.herkunft), erlaubt: HERKUENFTE.join(', ') });
+      ok = false;
+    }
+    if (ok) gueltig[name] = t;
+  }
+  return gueltig;
 }
 
 /**

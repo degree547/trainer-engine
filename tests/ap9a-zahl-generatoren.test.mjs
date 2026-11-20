@@ -199,10 +199,10 @@ test('M9: Wertebereich und Ziehen bleiben in den Grenzen und treffen beide Enden
   assert.equal(wertebereich({ von: 0.1, bis: 0.3, schritt: 0.1 }).anzahl, 3);
   assert.equal(wertebereich({ von: 5, bis: 5 }).anzahl, 1);
   const v = { a: { von: 4, bis: 12 } };
-  assert.deepEqual(ziehe(v, () => 0), { a: 4 });
-  assert.deepEqual(ziehe(v, () => 0.999999), { a: 12 });
+  assert.deepEqual(ziehe(v, () => 0).werte, { a: 4 });
+  assert.deepEqual(ziehe(v, () => 0.999999).werte, { a: 12 });
   for (let i = 0; i < 200; i += 1) {
-    const { a } = ziehe(v);
+    const { a } = ziehe(v).werte;
     assert.ok(Number.isInteger(a) && a >= 4 && a <= 12);
   }
 });
@@ -338,7 +338,9 @@ test('Beispielmodul: Zahlenfrage gültig, Generator gültig, aber gesperrt', asy
   assert.equal(erzeugeAufgabe(m.generatoren[0], { werte: { tempo: 12, zeit: 2.5 } }).loesung, 30);
 });
 
-test('SKS-Modul: kein Generator ist freigegeben (Freigabe erst in AP9B nach Tests gegen das Buch)', async () => {
+// Seit AP9B sind die SKS-Generatoren freigegeben; geprüft werden sie in tests/ap9b-navigation.test.mjs.
+test('SKS-Modul: freigegeben sind nur Generatoren, die tests/ap9b-navigation.test.mjs prüft', async () => {
   const m = JSON.parse(await readFile(new URL('../content/sks/sks.json', import.meta.url), 'utf8'));
-  assert.deepEqual(freigegebeneGeneratoren(m), []);
+  const { GEPRUEFT } = await import('./hilfen/navigation-faelle.mjs');
+  for (const g of freigegebeneGeneratoren(m)) assert.ok(GEPRUEFT.has(g.id), g.id);
 });

@@ -8,6 +8,8 @@
 //   tools/sks/kernpunkte-*.json                 Kernpunkte je Frage-ID (aus den amtlichen Antworten abgeleitet)
 //   tools/sks/raenge.json                       Nautische Ränge je Level (F-36, F-37), Bilder folgen später
 //   tools/sks/pruefung.json                     Regeln der Prüfungssimulation (F-20), vorläufige Werte
+//   tools/sks/steuertafel.json                  Amtliche Steuertafel (Ablenkung nach MgK und mwK), AP9B
+//   tools/sks/generatoren.json                  Rechenaufgaben (F-28), AP9B
 // Ausgabe:
 //   content/sks/sks.json                        Inhaltsmodul
 //   Bericht auf der Konsole: Fragenzahl je Bereich, unsichere Trennungen, fehlende Kernpunkte
@@ -172,6 +174,8 @@ export async function baueModul(text) {
   const korrekturen = await leseJson(join(ARBEIT, 'korrekturen.json'), {});
   const raenge = await leseJson(join(ARBEIT, 'raenge.json'), []);
   const pruefung = await leseJson(join(ARBEIT, 'pruefung.json'), null);
+  const tabellen = await leseJson(join(ARBEIT, 'steuertafel.json'), null);
+  const generatoren = baueGeneratoren(await leseJson(join(ARBEIT, 'generatoren.json'), null));
   const kernpunkte = await leseKernpunkte();
   const bericht = { anzahl: {}, unsicher: [], ohneKernpunkte: [], bild: [], korrigiert: 0 };
 
@@ -225,8 +229,34 @@ export async function baueModul(text) {
     ...(raenge.length > 0 ? { raenge } : {}),
     ...(pruefung ? { pruefung } : {}),
     fragen,
+    ...(tabellen ? { tabellen } : {}),
+    ...(generatoren.length > 0 ? { generatoren } : {}),
   };
   return { modul, bericht };
+}
+
+export const GENERATOR_QUELLE = 'Eigene Rechenaufgabe (Rechenweg nach DIN 13312 und den amtlichen Navigationsaufgaben SKS, ELWIS); Ablenkung aus der amtlichen Steuertafel im Begleitheft (Ausgabe 2013)';
+
+/**
+ * Generatoren aus tools/sks/generatoren.json: "liste": "WIND" wird durch die gemeinsame
+ * Windliste ersetzt; Thema, Quelle, Herkunft und Freigabe kommen dazu.
+ * Freigegeben sind sie, weil tests/ap9b-navigation.test.mjs sie gegen amtliche und Buch-Beispiele prüft.
+ */
+export function baueGeneratoren(datei) {
+  if (!datei) return [];
+  return datei.generatoren.map(({ titel, ...g }) => {
+    const variablen = Object.fromEntries(Object.entries(g.variablen).map(([name, bereich]) =>
+      [name, bereich.liste === 'WIND' ? { liste: datei.wind } : bereich]));
+    return {
+      id: g.id,
+      thema: 'sks-nav',
+      freigegeben: true,
+      ...g,
+      variablen,
+      quelle: `${GENERATOR_QUELLE}: ${titel}`,
+      herkunft: 'eigen',
+    };
+  });
 }
 
 async function main() {

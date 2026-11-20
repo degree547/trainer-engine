@@ -9,7 +9,15 @@
 // Ein Generator im Inhaltsmodul:
 //   { "id", "thema", "freigegeben" (true | false),
 //     "frage"       Text mit Platzhaltern {name}, z. B. "Fahrt {fahrt} kn, Zeit {zeit} h …",
-//     "variablen"   { name: { "von", "bis", optional "schritt" (Standard 1) }, … },
+//     "variablen"   { name: { "von", "bis", optional "schritt" (Standard 1) }
+//                         oder { "liste": [ Zahl | { "wert": Zahl, "text": "…" }, … ] }, … },
+//                   Bei einer Liste steht im Text der "text" des gezogenen Eintrags (z. B. "W"),
+//                   gerechnet wird mit "wert" (z. B. 270).
+//     optional "zwischenwerte" { name: Formel, … }  der Reihe nach berechnet; jede Formel darf
+//                   Variablen und frühere Zwischenwerte nutzen. Sie stehen in Formeln und Texten
+//                   wie Variablen zur Verfügung (für den Rechenweg in der Erklärung).
+//     optional "bedingung" Formel: Gezogen wird so lange neu, bis sie größer als 0 ist
+//                   (z. B. um Werte auszuschließen, bei denen genau auf ,5 gerundet würde).
 //     "loesung"     Formel, z. B. "fahrt * zeit",
 //     optional "nachkommastellen" (Lösung wird darauf gerundet),
 //     "toleranz", "einheit", optional "kreis"                       wie beim Typ "zahl"
@@ -18,6 +26,14 @@
 //
 // Formeln: Zahlen (mit Punkt), Variablen, + - * / ^ (Potenz), Klammern und die Funktionen
 // in FUNKTIONEN. Winkelfunktionen rechnen in Grad. "pi" ist die Kreiszahl.
+// Tabellen: Ein Modul kann unter "tabellen" Wertetabellen mitbringen,
+//   { name: { "von", "schritt", "werte": [Zahl, …], optional "kreis", "quelle", "herkunft" } }.
+//   In Formeln wird eine Tabelle wie eine Funktion mit einem Argument aufgerufen: name(x).
+//   Zwischen zwei Tabellenwerten wird linear gerechnet (nicht gerundet; runden mit round).
+//   Mit "kreis" (z. B. 360) wird x vorher auf 0 bis kreis gebracht.
+// Platzhalter in Texten: {name} zeigt den Wert, {name:kurs} dreistellig auf ganze Grad
+//   (z. B. 045; 360 wird 000), {name:tafel} dreistellig ohne Umrechnung (Tabellenzeilen wie
+//   360), {name:vz} mit Vorzeichen (z. B. +4, -3, 0).
 // Jede erzeugte Aufgabe hat die ID des Generators: Der Lernstand gilt für den Generator,
 // nicht für einzelne Zahlenwerte (stabile IDs, F-23).
 
@@ -41,6 +57,11 @@ export const FUNKTIONEN = {
   max: { n: [2, 9], f: Math.max },
   // Rest, der immer zwischen 0 und b liegt: mod(-10, 360) = 350.
   mod: { n: [2, 2], f: (a, b) => ((a % b) + b) % b },
+  // Vorzeichen: -1, 0 oder 1.
+  sign: { n: [1, 1], f: (x) => Math.sign(x) },
+  // Kleinster Winkel von a nach b mit Richtung, zwischen -180 und 180 (rechtsherum positiv):
+  // winkel(350, 10) = 20, winkel(10, 350) = -20.
+  winkel: { n: [2, 2], f: (a, b) => { const d = ((((b - a) % 360) + 540) % 360) - 180; return d === -180 ? 180 : d; } },
 };
 
 export const KONSTANTEN = { pi: Math.PI };
@@ -94,7 +115,8 @@ function zerlege(formel) {
  * @returns {object} Baum für rechne()
  * @throws {FormelFehler}
  */
-export function leseFormel(formel) {
+export function leseFormel(formel, { tabellen = [] } = {}) {
+  const tabellenNamen = new Set(tabellen instanceof Set || Array.isArray(tabellen) ? tabellen : Object.keys(tabellen ?? {}));
   if (typeof formel !== 'string' || formel.trim() === '') throw new FormelFehler('formel.leer');
   const teile = zerlege(formel);
   let i = 0;
@@ -144,7 +166,8 @@ export function leseFormel(formel) {
     if (teil.art === 'name') {
       i += 1;
       if (sieh()?.art === '(') {
-        const fn = Object.hasOwn(FUNKTIONEN, teil.wert) ? FUNKTIONEN[teil.wert] : null;
+        const tabelle = !Object.hasOwn(FUNKTIONEN, teil.wert) && tabellenNamen.has(teil.wert);
+        const fn = Object.hasOwn(FUNKTIONEN, teil.wert) ? FUNKTIONEN[teil.wert] : tabelle ? { n: [1, 1] } : null;
         if (!fn) throw new FormelFehler('formel.funktionUnbekannt', { name: teil.wert });
         i += 1;
         const argumente = [];
@@ -156,7 +179,7 @@ export function leseFormel(formel) {
         if (argumente.length < fn.n[0] || argumente.length > fn.n[1]) {
           throw new FormelFehler('formel.argumente', { name: teil.wert, anzahl: argumente.length });
         }
-        return { art: 'fn', name: teil.wert, argumente };
+        return { art: tabelle ? 'tabelle' : 'fn', name: teil.wert, argumente };
       }
       return { art: 'name', name: teil.wert };
     }
@@ -173,8 +196,26 @@ export function namenIn(baum, namen = new Set()) {
   if (baum.art === 'name' && !Object.hasOwn(KONSTANTEN, baum.name)) namen.add(baum.name);
   if (baum.art === 'op') { namenIn(baum.links, namen); namenIn(baum.rechts, namen); }
   if (baum.art === 'minus') namenIn(baum.wert, namen);
-  if (baum.art === 'fn') baum.argumente.forEach((a) => namenIn(a, namen));
+  if (baum.art === 'fn' || baum.art === 'tabelle') baum.argumente.forEach((a) => namenIn(a, namen));
   return namen;
+}
+
+/**
+ * Liest einen Wert aus einer Tabelle; zwischen zwei Einträgen wird linear gerechnet.
+ * @param {{von: number, schritt: number, werte: number[], kreis?: number}} tabelle
+ * @param {number} x
+ * @throws {FormelFehler} wenn x außerhalb der Tabelle liegt
+ */
+export function ausTabelle(tabelle, x) {
+  const { von, schritt, werte, kreis } = tabelle;
+  const stelle = ((kreis ? FUNKTIONEN.mod.f(x, kreis) : x) - von) / schritt;
+  const letzte = werte.length - 1;
+  // Kleine Rechenungenauigkeiten an den Enden zulassen.
+  if (stelle < -1e-9 || stelle > letzte + 1e-9) throw new FormelFehler('formel.tabelleBereich', { x });
+  const k = Math.min(Math.max(Math.floor(stelle + 1e-9), 0), letzte);
+  const anteil = stelle - k;
+  if (k === letzte || Math.abs(anteil) < 1e-9) return werte[k];
+  return werte[k] + anteil * (werte[k + 1] - werte[k]);
 }
 
 /**
@@ -184,25 +225,28 @@ export function namenIn(baum, namen = new Set()) {
  * @returns {number}
  * @throws {FormelFehler} bei unbekannter Variable oder einem Ergebnis, das keine Zahl ist
  */
-export function rechne(formel, werte = {}) {
-  const baum = typeof formel === 'string' ? leseFormel(formel) : formel;
-  const ergebnis = auswerten(baum, werte);
+export function rechne(formel, werte = {}, tabellen = {}) {
+  const baum = typeof formel === 'string' ? leseFormel(formel, { tabellen: tabellen ?? {} }) : formel;
+  const ergebnis = auswerten(baum, werte, tabellen ?? {});
   if (!Number.isFinite(ergebnis)) throw new FormelFehler('formel.keinErgebnis');
   return ergebnis;
 }
 
-function auswerten(k, werte) {
+function auswerten(k, werte, tabellen) {
   switch (k.art) {
     case 'zahl': return k.wert;
     case 'name':
       if (Object.prototype.hasOwnProperty.call(werte, k.name)) return werte[k.name];
       if (Object.hasOwn(KONSTANTEN, k.name)) return KONSTANTEN[k.name];
       throw new FormelFehler('formel.variableUnbekannt', { name: k.name });
-    case 'minus': return -auswerten(k.wert, werte);
-    case 'fn': return FUNKTIONEN[k.name].f(...k.argumente.map((a) => auswerten(a, werte)));
+    case 'minus': return -auswerten(k.wert, werte, tabellen);
+    case 'fn': return FUNKTIONEN[k.name].f(...k.argumente.map((a) => auswerten(a, werte, tabellen)));
+    case 'tabelle':
+      if (!Object.hasOwn(tabellen, k.name)) throw new FormelFehler('formel.funktionUnbekannt', { name: k.name });
+      return ausTabelle(tabellen[k.name], auswerten(k.argumente[0], werte, tabellen));
     case 'op': {
-      const a = auswerten(k.links, werte);
-      const b = auswerten(k.rechts, werte);
+      const a = auswerten(k.links, werte, tabellen);
+      const b = auswerten(k.rechts, werte, tabellen);
       if (k.op === '+') return a + b;
       if (k.op === '-') return a - b;
       if (k.op === '*') return a * b;
@@ -217,31 +261,111 @@ function auswerten(k, werte) {
 // Aufgaben erzeugen
 // ---------------------------------------------------------------------------
 
-/** Mögliche Werte einer Variablen: von, von + schritt, … bis höchstens bis. */
-export function wertebereich({ von, bis, schritt = 1 }) {
+const listenWert = (eintrag) => (typeof eintrag === 'number' ? eintrag : eintrag.wert);
+
+/**
+ * Mögliche Werte einer Variablen: von, von + schritt, … bis höchstens bis,
+ * oder die Einträge einer Liste. wert(k) ist die Zahl, text(k) der Text (oder null).
+ */
+export function wertebereich(bereich) {
+  if (Array.isArray(bereich.liste)) {
+    const liste = bereich.liste;
+    return {
+      anzahl: liste.length,
+      wert: (k) => listenWert(liste[k]),
+      text: (k) => (typeof liste[k] === 'object' && typeof liste[k].text === 'string' ? liste[k].text : null),
+    };
+  }
+  const { von, bis, schritt = 1 } = bereich;
   const anzahl = Math.floor((bis - von) / schritt + 1e-9) + 1;
-  return { anzahl, wert: (k) => runde(von + k * schritt, 10) };
+  return { anzahl, wert: (k) => runde(von + k * schritt, 10), text: () => null };
 }
 
-/** Zieht für jede Variable einen Wert aus ihrem Bereich. */
+/**
+ * Zieht für jede Variable einen Wert aus ihrem Bereich.
+ * @returns {{werte: Record<string, number>, texte: Record<string, string>}}
+ *   texte: Texte der gezogenen Listeneinträge (z. B. { wind: "W" })
+ */
 export function ziehe(variablen, zufall = Math.random) {
   const werte = {};
+  const texte = {};
   for (const [name, bereich] of Object.entries(variablen)) {
-    const { anzahl, wert } = wertebereich(bereich);
-    werte[name] = wert(Math.min(Math.floor(zufall() * anzahl), anzahl - 1));
+    const { anzahl, wert, text } = wertebereich(bereich);
+    const k = Math.min(Math.floor(zufall() * anzahl), anzahl - 1);
+    werte[name] = wert(k);
+    if (text(k) !== null) texte[name] = text(k);
   }
-  return werte;
+  return { werte, texte };
 }
 
-/** Setzt Werte in einen Text mit Platzhaltern {name} ein. Unbekannte Platzhalter bleiben stehen. */
-export function fuelle(text, werte, zahlText = String) {
-  return text.replace(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g,
-    (ganz, name) => (Object.prototype.hasOwnProperty.call(werte, name) ? zahlText(werte[name]) : ganz));
+/** Texte zu festen Werten aus Listen-Variablen suchen (für Tests mit vorgegebenen Werten). */
+function texteZu(variablen, werte) {
+  const texte = {};
+  for (const [name, bereich] of Object.entries(variablen)) {
+    if (!Array.isArray(bereich.liste) || !Object.hasOwn(werte, name)) continue;
+    const eintrag = bereich.liste.find((e) => typeof e === 'object' && listenWert(e) === werte[name]);
+    if (eintrag && typeof eintrag.text === 'string') texte[name] = eintrag.text;
+  }
+  return texte;
 }
 
-/** Namen der Platzhalter {name} in einem Text. */
+const PLATZHALTER = /\{([a-zA-Z_][a-zA-Z0-9_]*)(?::(kurs|tafel|vz))?\}/g;
+
+/**
+ * Setzt Werte in einen Text mit Platzhaltern {name}, {name:kurs}, {name:tafel} oder {name:vz} ein.
+ * Unbekannte Platzhalter bleiben stehen.
+ * @param {Record<string, string>} [texte] Texte statt Zahlen für einzelne Namen (Listeneinträge)
+ */
+export function fuelle(text, werte, zahlText = String, texte = {}) {
+  return text.replace(PLATZHALTER, (ganz, name, format) => {
+    if (!Object.prototype.hasOwnProperty.call(werte, name)) return ganz;
+    const w = werte[name];
+    if (format === 'kurs') return String(FUNKTIONEN.mod.f(runde(w), 360)).padStart(3, '0');
+    if (format === 'tafel') return String(runde(w)).padStart(3, '0');
+    if (format === 'vz') return w > 0 ? `+${zahlText(w)}` : zahlText(w === 0 ? 0 : w);
+    if (Object.hasOwn(texte, name)) return texte[name];
+    return zahlText(w);
+  });
+}
+
+/** Namen der Platzhalter {name} (auch mit Format) in einem Text. */
 export function platzhalterIn(text) {
-  return [...String(text).matchAll(/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g)].map((m) => m[1]);
+  return [...String(text).matchAll(PLATZHALTER)].map((m) => m[1]);
+}
+
+/**
+ * Variablen plus Zwischenwerte (der Reihe nach berechnet). Steht ein Zwischenwert schon in
+ * werte, bleibt er (für Tests mit Beispielaufgaben, die z. B. einen gemessenen Ort vorgeben).
+ */
+export function berechneZwischenwerte(generator, werte, tabellen = {}) {
+  const alle = { ...werte };
+  for (const [name, formel] of Object.entries(generator.zwischenwerte ?? {})) {
+    if (Object.hasOwn(werte, name)) continue;
+    alle[name] = rechne(formel, alle, tabellen);
+  }
+  return alle;
+}
+
+/**
+ * Zieht Werte und berechnet die Zwischenwerte. Mit "bedingung" wird so lange neu gezogen,
+ * bis die Bedingung größer als 0 ist (höchstens `versuche`-mal).
+ * @param {object} generator
+ * @param {{zufall?: () => number, werte?: Record<string, number>, tabellen?: object, versuche?: number}} [optionen]
+ *   werte: feste Werte statt Zufall; dann wird die Bedingung nicht geprüft (Beispielaufgaben
+ *   aus Büchern dürfen auch Werte haben, die der Generator selbst nicht ziehen würde)
+ * @returns {{alle: Record<string, number>, texte: Record<string, string>}}
+ * @throws {FormelFehler} 'formel.bedingungNieErfuellt', wenn die Bedingung nie erfüllt ist
+ */
+export function zieheMitZwischenwerten(generator, { zufall = Math.random, werte, tabellen = {}, versuche = 1000 } = {}) {
+  if (werte) {
+    return { alle: berechneZwischenwerte(generator, werte, tabellen), texte: texteZu(generator.variablen, werte) };
+  }
+  for (let versuch = 0; versuch < versuche; versuch += 1) {
+    const gezogen = ziehe(generator.variablen, zufall);
+    const alle = berechneZwischenwerte(generator, gezogen.werte, tabellen);
+    if (!generator.bedingung || rechne(generator.bedingung, alle, tabellen) > 0) return { alle, texte: gezogen.texte };
+  }
+  throw new FormelFehler('formel.bedingungNieErfuellt');
 }
 
 /**
@@ -251,21 +375,22 @@ export function platzhalterIn(text) {
  *   werte: feste Werte statt Zufall (für Tests gegen Beispielaufgaben)
  * @returns {object} Frage mit typ "zahl", "generator" (ID) und "werte"
  */
-export function erzeugeAufgabe(generator, { zufall = Math.random, werte, zahlText = String } = {}) {
-  const gezogen = werte ?? ziehe(generator.variablen, zufall);
-  let loesung = rechne(generator.loesung, gezogen);
+export function erzeugeAufgabe(generator, { zufall = Math.random, werte, zahlText = String, tabellen = {} } = {}) {
+  const { alle, texte } = zieheMitZwischenwerten(generator, { zufall, werte, tabellen });
+  let loesung = rechne(generator.loesung, alle, tabellen);
   if (Number.isInteger(generator.nachkommastellen)) loesung = runde(loesung, generator.nachkommastellen);
   if (generator.kreis) loesung = FUNKTIONEN.mod.f(loesung, generator.kreis);
-  const mitLoesung = { ...gezogen, loesung };
+  const gezogen = Object.fromEntries(Object.keys(generator.variablen).map((n) => [n, alle[n]]));
+  const mitLoesung = { ...alle, loesung };
   const aufgabe = {
     id: generator.id,
     thema: generator.thema,
     typ: 'zahl',
-    frage: fuelle(generator.frage, gezogen, zahlText),
+    frage: fuelle(generator.frage, alle, zahlText, texte),
     loesung,
     toleranz: generator.toleranz,
     einheit: generator.einheit,
-    erklaerung: fuelle(generator.erklaerung ?? '', mitLoesung, zahlText),
+    erklaerung: fuelle(generator.erklaerung ?? '', mitLoesung, zahlText, texte),
     quelle: generator.quelle,
     generator: generator.id,
     werte: gezogen,
@@ -286,7 +411,8 @@ export function freigegebeneGeneratoren(modul) {
 export function mitGeneratoren(modul, optionen = {}) {
   const freie = freigegebeneGeneratoren(modul);
   if (freie.length === 0) return modul;
-  return { ...modul, fragen: [...modul.fragen, ...freie.map((g) => erzeugeAufgabe(g, optionen))] };
+  const mitTabellen = { tabellen: modul.tabellen ?? {}, ...optionen };
+  return { ...modul, fragen: [...modul.fragen, ...freie.map((g) => erzeugeAufgabe(g, mitTabellen))] };
 }
 
 /**
@@ -297,6 +423,6 @@ export function erneuere(fragen, modul, optionen = {}) {
   const generatoren = new Map((modul?.generatoren ?? []).map((g) => [g.id, g]));
   return fragen.map((frage) => {
     const g = frage.generator ? generatoren.get(frage.generator) : null;
-    return g && g.freigegeben === true ? erzeugeAufgabe(g, optionen) : frage;
+    return g && g.freigegeben === true ? erzeugeAufgabe(g, { tabellen: modul.tabellen ?? {}, ...optionen }) : frage;
   });
 }

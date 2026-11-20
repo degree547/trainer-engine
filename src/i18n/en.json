@@ -259,5 +259,9 @@
   "zahl.loesung": "Solution",
   "zahl.toleranz": "Allowed deviation: ± {toleranz}",
   "zahl.toleranzGenau": "The number must be exact.",
-  "zahl.abweichung": "Your deviation: {abweichung}"
+  "zahl.abweichung": "Your deviation: {abweichung}",
+  "fehler.ortTabelle": "Table “{id}”",
+  "inhalt.variablenListe": "The variable “{name}” needs at least one entry in “liste”: a number or { \"wert\": number, \"text\": \"…\" }.",
+  "inhalt.bedingungNieErfuellt": "The condition is not met by any test draw; the generator could never create a task.",
+  "inhalt.tabelleWerte": "The table “{name}” needs at least two numbers in “werte”."
 }

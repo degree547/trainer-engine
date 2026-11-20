@@ -33,3 +33,5 @@ Einbau (AP6B, Claude Code):
 ## Voraussetzung
 
 Voraussetzung für den Import ist `pdftotext` (Poppler). Es liegt Git für Windows bei. Die App selbst braucht es nicht.
+| `steuertafel.json` | Amtliche Steuertafel aus dem Begleitheft (Ausgabe 2013): Ablenkung nach MgK (`ablMgK`) und nach mwK (`ablMwK`), 000° bis 360° in 10°-Schritten. Kommt ins Modul unter `tabellen`. |
+| `generatoren.json` | Rechenaufgaben zur Navigation (F-28). `"liste": "WIND"` steht für die gemeinsame Windliste; Thema, Quelle, Herkunft und Freigabe ergänzt der Import. Vor jeder Änderung: Testfälle in `tests/hilfen/navigation-faelle.mjs` ergänzen, `node --test` muss grün sein. |

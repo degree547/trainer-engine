@@ -259,5 +259,9 @@
   "zahl.loesung": "Lösung",
   "zahl.toleranz": "Erlaubte Abweichung: ± {toleranz}",
   "zahl.toleranzGenau": "Die Zahl muss genau stimmen.",
-  "zahl.abweichung": "Deine Abweichung: {abweichung}"
+  "zahl.abweichung": "Deine Abweichung: {abweichung}",
+  "fehler.ortTabelle": "Tabelle „{id}“",
+  "inhalt.variablenListe": "Die Variable „{name}“ braucht in „liste“ mindestens einen Eintrag: eine Zahl oder { \"wert\": Zahl, \"text\": \"…\" }.",
+  "inhalt.bedingungNieErfuellt": "Die Bedingung ist bei keiner Probeziehung erfüllt; der Generator könnte nie eine Aufgabe erzeugen.",
+  "inhalt.tabelleWerte": "Die Tabelle „{name}“ braucht unter „werte“ mindestens zwei Zahlen."
 }
