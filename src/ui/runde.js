@@ -10,9 +10,11 @@ import { el } from './dom.js';
 import { hinweistext, levelbalken, rangaufstieg } from './fortschritt.js';
 import {
   optionsReihenfolge, buchstabe, bewerteMc, istLeer, freitextVorschlag, herkunftVon,
-  bewerteZahl,
+  bewerteZahl, istMehrfach, richtigeOptionen, kernpunkteGeprueft,
 } from '../engine/m3-fragetypen.js';
 import { zahlfeld, zahlUngueltig, zahlAufloesung } from './zahl.js';
+import { mcLoesung, mehrfachHinweis } from './mc.js';
+import { pruefstatusZeile } from './pruefstatus.js';
 
 /**
  * @param {HTMLElement} ziel
@@ -27,6 +29,8 @@ import { zahlfeld, zahlUngueltig, zahlAufloesung } from './zahl.js';
  *     {zaehlt: boolean, bonus: number, fortschritt: object, hinweis: object, aufstieg?: object},
  *   holeFaecher: () => number[],
  *   onFertig: () => void,
+ *   holePruefstatus?: () => object | null,               // Prüfstatus der Kernpunkte (F-39) aus M7
+ *   onPruefstatus?: (frage: object, geprueft: boolean) => void, // fehlt: Status nur anzeigen
  * }} runde
  */
 export function zeigeRunde(ziel, runde) {
@@ -38,7 +42,7 @@ export function zeigeRunde(ziel, runde) {
   // Zustand der aktuellen Frage
   let aufgedeckt = false;
   let reihenfolge = [];      // MC: Anzeigereihenfolge der Optionen
-  let gewaehlt = null;       // MC: gewählte Option (Nummer im Modul)
+  let gewaehlt = null;       // MC: gewählte Option (Nummer im Modul); Mehrfachauswahl (F-40): Set der Nummern
   let antwort = '';          // Freitext: getippte Antwort
   let leerNachfragen = false; // Freitext: Rückfrage bei leerem Feld
   let abgehakt = new Set();  // Freitext: abgehakte Kernpunkte
@@ -47,7 +51,7 @@ export function zeigeRunde(ziel, runde) {
   function neueFrage() {
     const frage = runde.fragen[nr];
     aufgedeckt = false;
-    gewaehlt = null;
+    gewaehlt = istMehrfach(frage) ? new Set() : null;
     antwort = '';
     leerNachfragen = false;
     abgehakt = new Set();
@@ -83,6 +87,7 @@ export function zeigeRunde(ziel, runde) {
       el('p', { class: 'etikett' }, runde.themenTitel.get(frage.thema) ?? frage.thema),
       el('h2', { class: 'fragetext', id: 'fragetext' }, frage.frage),
       frage.hinweis ? el('p', { class: 'hinweis' }, frage.hinweis) : null,
+      frage.typ === 'mc' && !aufgedeckt ? mehrfachHinweis(frage) : null,
       frage.typ === 'mc' ? optionen(frage) : null,
       frage.typ === 'freitext' && !aufgedeckt ? eingabefeld() : null,
       frage.typ === 'zahl' && !aufgedeckt ? zahleingabe(frage) : null,
@@ -99,6 +104,13 @@ export function zeigeRunde(ziel, runde) {
     const aktionen = el('div', { class: 'aktionen' });
     if (frage.typ === 'mc') {
       // Vor der Wahl keine Knöpfe unten: die Optionen selbst sind die Knöpfe.
+      // Mehrfachauswahl (F-40): erst alle zutreffenden antippen, dann prüfen.
+      if (!aufgedeckt && istMehrfach(frage)) {
+        aktionen.append(el('button', {
+          type: 'button', class: 'knopf', id: 'pruefknopf', disabled: gewaehlt.size === 0,
+          onclick: () => { aufgedeckt = true; zeichneFrage(); },
+        }, t('mc.pruefen')));
+      }
       if (aufgedeckt) {
         aktionen.append(el('button', {
           type: 'button', class: 'knopf', onclick: () => bewerteUndWeiter(bewerteMc(frage, gewaehlt)),
@@ -132,19 +144,32 @@ export function zeigeRunde(ziel, runde) {
   // --- Multiple Choice ---------------------------------------------------
 
   function optionen(frage) {
+    const mehrfach = istMehrfach(frage);
+    const richtige = new Set(richtigeOptionen(frage));
+    const istGewaehlt = (i) => (mehrfach ? gewaehlt.has(i) : i === gewaehlt);
     const liste = el('ul', { class: 'optionen', role: 'list', 'aria-labelledby': 'fragetext' });
     reihenfolge.forEach((i, position) => {
       let klasse = 'option';
       let zusatz = null;
       if (aufgedeckt) {
-        if (i === frage.richtig) { klasse += ' korrekt'; zusatz = t('mc.markeRichtig'); }
-        else if (i === gewaehlt) { klasse += ' daneben'; zusatz = t('mc.markeGewaehlt'); }
-      }
+        if (richtige.has(i)) {
+          klasse += ' korrekt';
+          zusatz = t(mehrfach && !istGewaehlt(i) ? 'mc.markeFehlt' : 'mc.markeRichtig');
+        } else if (istGewaehlt(i)) { klasse += ' daneben'; zusatz = t('mc.markeGewaehlt'); }
+      } else if (mehrfach && istGewaehlt(i)) klasse += ' gewaehlt';
       liste.append(el('li', {},
         el('button', {
           type: 'button', class: klasse, disabled: aufgedeckt,
-          'aria-pressed': aufgedeckt ? String(i === gewaehlt) : null,
-          onclick: () => { gewaehlt = i; aufgedeckt = true; zeichneFrage(); },
+          'aria-pressed': aufgedeckt || mehrfach ? String(istGewaehlt(i)) : null,
+          onclick: (e) => {
+            if (!mehrfach) { gewaehlt = i; aufgedeckt = true; zeichneFrage(); return; }
+            // Mehrfachauswahl (F-40): nur umschalten, ohne neu zu zeichnen (die Seite springt nicht).
+            if (gewaehlt.has(i)) gewaehlt.delete(i); else gewaehlt.add(i);
+            e.currentTarget.classList.toggle('gewaehlt', gewaehlt.has(i));
+            e.currentTarget.setAttribute('aria-pressed', String(gewaehlt.has(i)));
+            const knopf = ziel.querySelector('#pruefknopf');
+            if (knopf) knopf.disabled = gewaehlt.size === 0;
+          },
         },
         el('span', { class: 'buchstabe', 'aria-hidden': 'true' }, buchstabe(position)),
         el('span', { class: 'optionstext' }, frage.optionen[i]),
@@ -158,10 +183,7 @@ export function zeigeRunde(ziel, runde) {
     const teile = [
       el('p', { class: `urteil ${richtig ? 'ok' : 'nein'}` }, t(richtig ? 'mc.richtig' : 'mc.falsch')),
     ];
-    if (!richtig) {
-      teile.push(el('p', { class: 'etikett' }, t('runde.richtigeAntwort')),
-        el('p', { class: 'antworttext' }, frage.optionen[frage.richtig]));
-    }
+    if (!richtig) teile.push(...mcLoesung(frage));
     teile.push(...erklaerungUndQuelle(frage));
     return [el('section', { class: 'karte aufloesung', 'aria-live': 'polite' }, ...teile)];
   }
@@ -238,9 +260,26 @@ export function zeigeRunde(ziel, runde) {
       el('p', { class: 'etikett' }, t('freitext.kernpunkte')),
       el('p', { class: 'hinweis oben' }, t('freitext.kernpunkteAnleitung')),
       punkte,
-      frage.kernpunkteStatus === 'ungeprueft' ? el('p', { class: 'hinweis' }, t('freitext.ungeprueft')) : null);
+      pruefzeile(frage));
 
     return [eigene, muster, checkliste];
+  }
+
+  /** Prüfstatus der Kernpunkte mit Knopf (F-39); beim Umschalten wird nur diese Zeile erneuert. */
+  function pruefzeile(frage) {
+    const geprueft = kernpunkteGeprueft(frage, runde.holePruefstatus?.() ?? null);
+    const zeile = pruefstatusZeile({
+      geprueft,
+      onUmschalten: runde.onPruefstatus
+        ? (neu) => {
+          runde.onPruefstatus(frage, neu);
+          const ersatz = pruefzeile(frage);
+          zeile.replaceWith(ersatz);
+          ersatz.querySelector('#pruefstatusknopf')?.focus();
+        }
+        : null,
+    });
+    return zeile;
   }
 
   function vorschlagszeile(frage) {

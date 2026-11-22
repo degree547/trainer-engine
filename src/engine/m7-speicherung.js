@@ -35,16 +35,26 @@
 // vor Version 2, es wird also nichts doppelt gezählt). Multiple-Choice-Fragen beginnen bei 0.
 // Beim Zusammenführen gewinnt die jüngere Karte samt ihren Zählern; beantworten zwei
 // Geräte dieselbe Frage, fehlt dem älteren Eintrag deshalb eine Antwort in der Zählung.
+//
+// Seit Datenbankversion 4 gibt es den Objektspeicher "pruefstatus" (F-39): je Modul-ID
+//   { version: 1, fragen: { "<frage-id>": { geprueft: true | false, geaendert: <Millisekunden> } } }
+// Ein Eintrag entsteht erst, wenn der Lernende den Prüfstatus der Kernpunkte in der App umschaltet;
+// ohne Eintrag gilt der Wert aus dem Modul ("kernpunkteStatus"). Auch das Zurücknehmen wird als
+// Eintrag (geprueft: false) gespeichert, damit es beim Zusammenführen zweier Geräte nicht verloren
+// geht: je Frage gewinnt der jüngere Eintrag. Weil die Einträge an der stabilen Frage-ID hängen,
+// überstehen sie Updates des Moduls (F-23).
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
 import { pruefeProfil, ProfilFehler, fuehreProfileZusammen } from './m4-gamification.js';
 
 export const DB_NAME = 'trainer-engine';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 const SPEICHER = 'lernstand';
 const PROFIL = 'profil';
 const PROFIL_SCHLUESSEL = 'profil';
 const ANTWORTEN = 'antworten';
+const PRUEFSTATUS = 'pruefstatus';
+export const PRUEFSTATUS_VERSION = 1;
 const MODI = ['normal', 'vorziehen', 'fehler'];
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
@@ -130,6 +140,63 @@ export function fuehreZusammen(a, b) {
   return { version: LERNSTAND_VERSION, karten };
 }
 
+// --- Prüfstatus der Kernpunkte (F-39) ---------------------------------------
+
+/** Ein leerer Prüfstatus: alle Fragen behalten den Wert aus dem Modul. */
+export function neuerPruefstatus() {
+  return { version: PRUEFSTATUS_VERSION, fragen: {} };
+}
+
+function istGueltigerPruefeintrag(e) {
+  return e != null && typeof e === 'object' && typeof e.geprueft === 'boolean' && Number.isFinite(e.geaendert);
+}
+
+/**
+ * Prüft einen gespeicherten oder importierten Prüfstatus. Ungültige Einträge werden verworfen
+ * und gezählt, statt den ganzen Stand abzulehnen.
+ * @returns {{pruefstatus: object, verworfen: number}}
+ * @throws {SpeicherFehler} 'speicher.unlesbar' oder 'speicher.neuereVersion'
+ */
+export function pruefePruefstatus(daten) {
+  if (daten == null) return { pruefstatus: neuerPruefstatus(), verworfen: 0 };
+  if (typeof daten !== 'object' || typeof daten.fragen !== 'object' || daten.fragen === null || Array.isArray(daten.fragen)) {
+    throw new SpeicherFehler('speicher.unlesbar');
+  }
+  if ((daten.version ?? 1) > PRUEFSTATUS_VERSION) throw new SpeicherFehler('speicher.neuereVersion');
+  const fragen = {};
+  let verworfen = 0;
+  for (const [id, e] of Object.entries(daten.fragen)) {
+    if (id !== '' && istGueltigerPruefeintrag(e)) fragen[id] = { geprueft: e.geprueft, geaendert: e.geaendert };
+    else verworfen += 1;
+  }
+  return { pruefstatus: { version: PRUEFSTATUS_VERSION, fragen }, verworfen };
+}
+
+/**
+ * Setzt den Prüfstatus einer Frage (F-39). Der übergebene Stand bleibt unverändert.
+ * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
+ */
+export function setzePruefstatus(stand, frageId, geprueft, jetzt = Date.now()) {
+  return {
+    version: PRUEFSTATUS_VERSION,
+    fragen: { ...stand.fragen, [frageId]: { geprueft: Boolean(geprueft), geaendert: jetzt } },
+  };
+}
+
+/** Führt zwei Prüfstände zusammen: je Frage gewinnt der jüngere Eintrag, bei Gleichstand `a`. */
+export function fuehrePruefstatusZusammen(a, b) {
+  const fragen = { ...a.fragen };
+  for (const [id, e] of Object.entries(b.fragen)) {
+    if (!fragen[id] || e.geaendert > fragen[id].geaendert) fragen[id] = e;
+  }
+  return { version: PRUEFSTATUS_VERSION, fragen };
+}
+
+/** Zahl der Einträge in `neu`, die in `alt` fehlen oder dort älter sind (für die Rückmeldung). */
+function uebernommenePruefeintraege(alt, neu) {
+  return Object.entries(neu.fragen).filter(([id, e]) => !alt.fragen[id] || e.geaendert > alt.fragen[id].geaendert).length;
+}
+
 // --- Freitext-Antworten (F-34) -------------------------------------------
 
 function neueAntwortId(jetzt) {
@@ -175,14 +242,17 @@ export function fuehreAntwortenZusammen(a, b) {
 //
 // Eine Sicherungsdatei enthält alles, was die App im Browser speichert:
 //   { app: "trainer-engine", art: "sicherung", version: 1, erstellt: "<ISO-Zeitpunkt>",
-//     profil: <Profil aus M4>, lernstand: { "<modul-id>": <Lernstand> }, antworten: [ ... ] }
+//     profil: <Profil aus M4>, lernstand: { "<modul-id>": <Lernstand> }, antworten: [ ... ],
+//     pruefstatus: { "<modul-id>": <Prüfstatus> } }
+// Version 2 (AP11) hat zusätzlich "pruefstatus" (F-39); eine Sicherung der Version 1 wird weiter
+// gelesen und bringt dann keinen Prüfstatus mit.
 // Der Import ersetzt nie, er führt zusammen: je Frage gewinnt die jüngere Karte, XP zählen je
 // Gerät und Tag nur einmal, Freitext-Antworten kommen ohne Doppelte dazu. So kann dieselbe
 // Datei gefahrlos mehrmals eingelesen werden, und Lernstand von Gerät 2 geht nicht verloren,
 // wenn eine ältere Sicherung von Gerät 1 dazukommt. Karten zu Fragen, die ein Modul nicht mehr
 // enthält, bleiben erhalten (F-23); die Lernlogik zählt nur Fragen, die es im Modul gibt.
 
-export const SICHERUNG_VERSION = 1;
+export const SICHERUNG_VERSION = 2;
 const SICHERUNG_APP = 'trainer-engine';
 const SICHERUNG_ART = 'sicherung';
 
@@ -193,10 +263,11 @@ export function dateinameSicherung(datum) {
 
 /**
  * Baut den Inhalt einer Sicherungsdatei.
- * @param {{profil: object|null, lernstaende: Object<string, object>, antworten: object[]}} daten
+ * @param {{profil: object|null, lernstaende: Object<string, object>, antworten: object[],
+ *          pruefstaende?: Object<string, object>}} daten
  * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
  */
-export function baueSicherung({ profil, lernstaende, antworten }, jetzt = Date.now()) {
+export function baueSicherung({ profil, lernstaende, antworten, pruefstaende = {} }, jetzt = Date.now()) {
   return {
     app: SICHERUNG_APP,
     art: SICHERUNG_ART,
@@ -205,6 +276,7 @@ export function baueSicherung({ profil, lernstaende, antworten }, jetzt = Date.n
     profil: profil ?? null,
     lernstand: { ...lernstaende },
     antworten: [...antworten],
+    pruefstatus: { ...pruefstaende },
   };
 }
 
@@ -217,8 +289,8 @@ function sicherungsFehler(fehler) {
 /**
  * Prüft den Inhalt einer Sicherungsdatei, bevor etwas gespeichert wird. Ältere Lernstände
  * werden umgestellt, beschädigte Einträge übersprungen und gezählt.
- * @returns {{sicherung: {profil: object|null, lernstaende: Object<string, object>, antworten: object[]},
- *            verworfen: number}}
+ * @returns {{sicherung: {profil: object|null, lernstaende: Object<string, object>, antworten: object[],
+ *            pruefstaende: Object<string, object>}, verworfen: number}}
  * @throws {SpeicherFehler} 'sicherung.istModul', 'sicherung.keineSicherung', 'sicherung.unlesbar'
  *   oder 'sicherung.neuereVersion'; dann darf nichts übernommen werden
  */
@@ -235,7 +307,9 @@ export function pruefeSicherung(daten) {
 
   const lernstandRoh = daten.lernstand ?? {};
   const antwortenRoh = daten.antworten ?? [];
-  if (typeof lernstandRoh !== 'object' || Array.isArray(lernstandRoh) || !Array.isArray(antwortenRoh)) {
+  const pruefstatusRoh = daten.pruefstatus ?? {};
+  if (typeof lernstandRoh !== 'object' || Array.isArray(lernstandRoh) || !Array.isArray(antwortenRoh)
+    || pruefstatusRoh === null || typeof pruefstatusRoh !== 'object' || Array.isArray(pruefstatusRoh)) {
     throw new SpeicherFehler('sicherung.unlesbar');
   }
 
@@ -265,7 +339,18 @@ export function pruefeSicherung(daten) {
       throw sicherungsFehler(fehler);
     }
   }
-  return { sicherung: { profil, lernstaende, antworten }, verworfen };
+  const pruefstaende = {};
+  for (const [modulId, roh] of Object.entries(pruefstatusRoh)) {
+    if (modulId === '') { verworfen += 1; continue; }
+    try {
+      const geprueft = pruefePruefstatus(roh);
+      pruefstaende[modulId] = geprueft.pruefstatus;
+      verworfen += geprueft.verworfen;
+    } catch (fehler) {
+      throw sicherungsFehler(fehler);
+    }
+  }
+  return { sicherung: { profil, lernstaende, antworten, pruefstaende }, verworfen };
 }
 
 /** Zahl der Karten in `neu`, die in `alt` fehlen oder dort älter sind (für die Rückmeldung). */
@@ -340,6 +425,7 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
       if (!neu.objectStoreNames.contains(SPEICHER)) neu.createObjectStore(SPEICHER);
       if (!neu.objectStoreNames.contains(PROFIL)) neu.createObjectStore(PROFIL);
       if (!neu.objectStoreNames.contains(ANTWORTEN)) neu.createObjectStore(ANTWORTEN);
+      if (!neu.objectStoreNames.contains(PRUEFSTATUS)) neu.createObjectStore(PRUEFSTATUS);
     };
     db = await alsPromise(anfrage);
   } catch (fehler) {
@@ -445,19 +531,48 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
     },
 
     /**
+     * Lädt den Prüfstatus der Kernpunkte eines Moduls (F-39); ein leerer, wenn noch keiner gespeichert ist.
+     * @returns {Promise<{pruefstatus: object, verworfen: number}>}
+     */
+    async ladePruefstatus(modulId) {
+      const tx = db.transaction(PRUEFSTATUS, 'readonly');
+      return pruefePruefstatus(await alsPromise(tx.objectStore(PRUEFSTATUS).get(modulId)));
+    },
+
+    /**
+     * Setzt den Prüfstatus einer Frage und liefert den gespeicherten Stand des Moduls zurück
+     * (Einträge aus einem zweiten Tab bleiben erhalten).
+     * @param {number} [jetzt] für Tests austauschbar
+     * @returns {Promise<object>}
+     */
+    setzePruefstatus(modulId, frageId, geprueft, jetzt = Date.now()) {
+      return reiheEin(async () => {
+        const tx = db.transaction(PRUEFSTATUS, 'readwrite');
+        const fertig = transaktionFertig(tx);
+        const gespeichert = pruefePruefstatus(await alsPromise(tx.objectStore(PRUEFSTATUS).get(modulId))).pruefstatus;
+        const neu = setzePruefstatus(gespeichert, frageId, geprueft, jetzt);
+        tx.objectStore(PRUEFSTATUS).put(neu, modulId);
+        await fertig;
+        return neu;
+      });
+    },
+
+    /**
      * Liest alles Gespeicherte für eine Sicherungsdatei (F-22): Lernstand aller Module,
-     * Profil und Freitext-Antworten. Wartet, bis alle vorher begonnenen Schreibvorgänge fertig sind.
+     * Profil, Freitext-Antworten und Prüfstatus (F-39). Wartet, bis alle vorher begonnenen Schreibvorgänge fertig sind.
      * @param {number} [jetzt] für Tests austauschbar
      * @returns {Promise<object>} Inhalt der Sicherungsdatei (baueSicherung)
      */
     ladeSicherung(jetzt = Date.now()) {
       return reiheEin(async () => {
-        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN], 'readonly');
-        const [schluessel, werte, profilDaten, antwortenRoh] = await Promise.all([
+        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN, PRUEFSTATUS], 'readonly');
+        const [schluessel, werte, profilDaten, antwortenRoh, pruefSchluessel, pruefWerte] = await Promise.all([
           alsPromise(tx.objectStore(SPEICHER).getAllKeys()),
           alsPromise(tx.objectStore(SPEICHER).getAll()),
           alsPromise(tx.objectStore(PROFIL).get(PROFIL_SCHLUESSEL)),
           alsPromise(tx.objectStore(ANTWORTEN).getAll()),
+          alsPromise(tx.objectStore(PRUEFSTATUS).getAllKeys()),
+          alsPromise(tx.objectStore(PRUEFSTATUS).getAll()),
         ]);
         const { antworten } = fuehreAntwortenZusammen(antwortenRoh ?? [], []);
         const lernstaende = {};
@@ -465,7 +580,9 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
           lernstaende[modulId] = migriere(werte[i], antworten.filter((e) => e.modul === modulId)).lernstand;
         });
         const profil = profilDaten == null ? null : profilAus(profilDaten).profil;
-        return baueSicherung({ profil, lernstaende, antworten }, jetzt);
+        const pruefstaende = {};
+        pruefSchluessel.forEach((modulId, i) => { pruefstaende[modulId] = pruefePruefstatus(pruefWerte[i]).pruefstatus; });
+        return baueSicherung({ profil, lernstaende, antworten, pruefstaende }, jetzt);
       });
     },
 
@@ -473,16 +590,17 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
      * Führt eine geprüfte Sicherung (aus pruefeSicherung) mit dem Gespeicherten zusammen,
      * alles in einer Transaktion: Schlägt etwas fehl, bleibt der alte Stand unverändert.
      * Die Geräte-ID dieses Geräts bleibt erhalten.
-     * @returns {Promise<{module: number, karten: number, antworten: number}>}
-     *   module: Module in der Sicherung, karten: neue oder neuere Karten, antworten: neue Antworten
+     * @returns {Promise<{module: number, karten: number, antworten: number, pruefstatus: number}>}
+     *   module: Module in der Sicherung, karten: neue oder neuere Karten, antworten: neue Antworten,
+     *   pruefstatus: neue oder neuere Einträge zum Prüfstatus der Kernpunkte
      */
-    importiere({ profil, lernstaende, antworten }) {
+    importiere({ profil, lernstaende, antworten, pruefstaende = {} }) {
       return reiheEin(async () => {
-        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN], 'readwrite');
+        const tx = db.transaction([SPEICHER, PROFIL, ANTWORTEN, PRUEFSTATUS], 'readwrite');
         const fertig = transaktionFertig(tx);
         // Bricht die Transaktion ab, während hier noch gelesen wird, meldet `await fertig` den Fehler.
         fertig.catch(() => {});
-        const ergebnis = { module: 0, karten: 0, antworten: 0 };
+        const ergebnis = { module: 0, karten: 0, antworten: 0, pruefstatus: 0 };
 
         for (const [modulId, lernstand] of Object.entries(lernstaende)) {
           const gespeichert = (await leseLernstand(tx, modulId)).lernstand;
@@ -501,6 +619,12 @@ export async function oeffneSpeicher({ indexedDB = globalThis.indexedDB, name = 
           if (vorhanden.has(eintrag.id)) continue;
           tx.objectStore(ANTWORTEN).put(eintrag, eintrag.id);
           ergebnis.antworten += 1;
+        }
+
+        for (const [modulId, stand] of Object.entries(pruefstaende)) {
+          const gespeichert = pruefePruefstatus(await alsPromise(tx.objectStore(PRUEFSTATUS).get(modulId))).pruefstatus;
+          ergebnis.pruefstatus += uebernommenePruefeintraege(gespeichert, stand);
+          tx.objectStore(PRUEFSTATUS).put(fuehrePruefstatusZusammen(gespeichert, stand), modulId);
         }
 
         await fertig;

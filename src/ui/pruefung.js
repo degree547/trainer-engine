@@ -12,8 +12,11 @@ import { t } from './i18n.js';
 import { el } from './dom.js';
 import {
   optionsReihenfolge, buchstabe, bewerteMc, bewerteZahl, istLeer, freitextVorschlag, herkunftVon,
+  istMehrfach, kernpunkteGeprueft,
 } from '../engine/m3-fragetypen.js';
 import { zahlfeld, zahlUngueltig, zahlLoesung, mitEinheit } from './zahl.js';
+import { mcLoesung, mehrfachHinweis, optionstexte } from './mc.js';
+import { pruefstatusZeile } from './pruefstatus.js';
 import { endeUm, restzeit, zeittext, werteAus } from '../engine/m6-pruefung.js';
 
 // Ab dieser Restzeit wird die Uhr hervorgehoben.
@@ -27,6 +30,8 @@ const KNAPP_MS = 5 * 60_000;
  *   bildeBogen: () => object[],           // aus bildePruefbogen (M6)
  *   onZurueck: () => void,                // zur Startseite
  *   onFehlerUeben: (fragen: object[]) => void,
+ *   holePruefstatus?: () => object | null, // Prüfstatus der Kernpunkte (F-39) aus M7
+ *   onPruefstatus?: (frage: object, geprueft: boolean) => void,
  *   jetzt?: () => number,                 // austauschbar für Tests
  * }} sim
  */
@@ -41,7 +46,7 @@ export function zeigePruefung(ziel, sim) {
   let uhr = null;               // setInterval der Uhr
   let abgegebenUm = null;
   let zeitAbgelaufen = false;
-  const antworten = new Map();  // Frage-ID → MC: Optionsnummer, Freitext und Zahl: Text
+  const antworten = new Map();  // Frage-ID → MC: Optionsnummer (Mehrfachauswahl: Set), Freitext und Zahl: Text
   const reihenfolgen = new Map(); // Frage-ID → Anzeigereihenfolge der MC-Optionen
   const bewertungen = new Map(); // Frage-ID → richtig
   let zuBewerten = [];          // Freitext-Fragen mit Antwort
@@ -119,7 +124,8 @@ export function zeigePruefung(ziel, sim) {
 
   function beantwortet(frage) {
     const a = antworten.get(frage.id);
-    return frage.typ === 'mc' ? a !== undefined : !istLeer(a ?? '');
+    if (frage.typ === 'mc') return istMehrfach(frage) ? (a?.size ?? 0) > 0 : a !== undefined;
+    return !istLeer(a ?? '');
   }
 
   function merkeEingabe() {
@@ -149,6 +155,7 @@ export function zeigePruefung(ziel, sim) {
       el('p', { class: 'etikett' }, themenTitel.get(frage.thema) ?? frage.thema),
       el('h2', { class: 'fragetext', id: 'fragetext' }, frage.frage),
       frage.hinweis ? el('p', { class: 'hinweis' }, frage.hinweis) : null,
+      frage.typ === 'mc' ? mehrfachHinweis(frage) : null,
       frage.typ === 'mc' ? mcOptionen(frage) : null,
       frage.typ === 'freitext' ? eingabefeld(frage) : null,
       frage.typ === 'zahl' ? zahleingabe(frage) : null,
@@ -172,13 +179,22 @@ export function zeigePruefung(ziel, sim) {
   }
 
   function mcOptionen(frage) {
+    const mehrfach = istMehrfach(frage);
     const gewaehlt = antworten.get(frage.id);
+    const istGewaehlt = (i) => (mehrfach ? gewaehlt?.has(i) ?? false : i === gewaehlt);
     const liste = el('ul', { class: 'optionen', role: 'list', 'aria-labelledby': 'fragetext' });
     reihenfolgen.get(frage.id).forEach((i, position) => {
       liste.append(el('li', {},
         el('button', {
-          type: 'button', class: `option${i === gewaehlt ? ' gewaehlt' : ''}`, 'aria-pressed': String(i === gewaehlt),
-          onclick: () => { antworten.set(frage.id, i); zeichneFrage(); },
+          type: 'button', class: `option${istGewaehlt(i) ? ' gewaehlt' : ''}`, 'aria-pressed': String(istGewaehlt(i)),
+          onclick: () => {
+            if (!mehrfach) { antworten.set(frage.id, i); zeichneFrage(); return; }
+            // Mehrfachauswahl (F-40): umschalten; neue Menge, damit nichts geteilt wird.
+            const neu = new Set(antworten.get(frage.id) ?? []);
+            if (neu.has(i)) neu.delete(i); else neu.add(i);
+            antworten.set(frage.id, neu);
+            zeichneFrage();
+          },
         },
         el('span', { class: 'buchstabe', 'aria-hidden': 'true' }, buchstabe(position)),
         el('span', { class: 'optionstext' }, frage.optionen[i]))));
@@ -307,7 +323,23 @@ export function zeigePruefung(ziel, sim) {
       el('p', { class: 'etikett' }, t('freitext.kernpunkte')),
       el('p', { class: 'hinweis oben' }, t('freitext.kernpunkteAnleitung')),
       punkte,
-      frage.kernpunkteStatus === 'ungeprueft' ? el('p', { class: 'hinweis' }, t('freitext.ungeprueft')) : null);
+      pruefzeile(frage));
+  }
+
+  /** Prüfstatus der Kernpunkte mit Knopf (F-39), wie in der Runde. */
+  function pruefzeile(frage) {
+    const zeile = pruefstatusZeile({
+      geprueft: kernpunkteGeprueft(frage, sim.holePruefstatus?.() ?? null),
+      onUmschalten: sim.onPruefstatus
+        ? (neu) => {
+          sim.onPruefstatus(frage, neu);
+          const ersatz = pruefzeile(frage);
+          zeile.replaceWith(ersatz);
+          ersatz.querySelector('#pruefstatusknopf')?.focus();
+        }
+        : null,
+    });
+    return zeile;
   }
 
   function vorschlagstext(frage) {
@@ -407,15 +439,15 @@ export function zeigePruefung(ziel, sim) {
   function fehlerzeile(frage) {
     const a = antworten.get(frage.id);
     let eigene;
-    if (frage.typ === 'mc') eigene = a === undefined ? null : frage.optionen[a];
+    if (frage.typ === 'mc' && istMehrfach(frage)) eigene = (a?.size ?? 0) === 0 ? null : optionstexte(frage, a).join(' · ');
+    else if (frage.typ === 'mc') eigene = a === undefined ? null : frage.optionen[a];
     else if (frage.typ === 'zahl') {
       const zahl = bewerteZahl(frage, a ?? '').zahl;
       eigene = zahl === null ? (istLeer(a ?? '') ? null : a) : mitEinheit(zahl, frage.einheit);
     } else eigene = istLeer(a ?? '') ? null : a;
     let loesung;
-    if (frage.typ === 'mc') {
-      loesung = [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])];
-    } else if (frage.typ === 'zahl') loesung = zahlLoesung(frage);
+    if (frage.typ === 'mc') loesung = mcLoesung(frage);
+    else if (frage.typ === 'zahl') loesung = zahlLoesung(frage);
     else loesung = [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
     return el('li', {},
       el('details', {},

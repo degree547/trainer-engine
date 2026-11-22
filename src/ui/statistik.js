@@ -5,6 +5,7 @@ import { t, tn } from './i18n.js';
 import { el } from './dom.js';
 import { MIN_VERSUCHE } from '../engine/m5-statistik.js';
 import { zahlLoesung } from './zahl.js';
+import { mcLoesung } from './mc.js';
 
 const prozent = (anteil) => Math.round(anteil * 100);
 
@@ -14,6 +15,7 @@ const prozent = (anteil) => Math.round(anteil * 100);
  *   modul: object,
  *   fortschritt: {themen: object[], gesamt: object},  // aus fortschrittJeThema (M5)
  *   schwaechen: object[],                              // aus schwaechenliste (M5)
+ *   pruefstand?: {themen: Map, gesamt: object},        // aus pruefstandJeThema (M5, F-39)
  *   onZurueck: () => void,
  *   onThema?: (id: string) => void,                   // Thema wählen und zur Startseite (F-06)
  * }} statistik
@@ -27,25 +29,29 @@ export function zeigeStatistik(ziel, statistik) {
     el('button', { type: 'button', class: 'knopf', onclick: statistik.onZurueck }, t('auswertung.zurStartseite')));
 
   ziel.replaceChildren(
-    el('div', { class: 'inhalt' }, kopf, themenkarte(statistik.fortschritt, statistik.onThema), schwaechenkarte(statistik)),
+    el('div', { class: 'inhalt' }, kopf, themenkarte(statistik.fortschritt, statistik.onThema, statistik.pruefstand),
+      schwaechenkarte(statistik)),
     aktionen,
   );
   window.scrollTo(0, 0);
 }
 
 /** Fortschritt je Thema mit Balken: sicher (Fach 4–5) und in Arbeit (Fach 1–3). */
-function themenkarte({ themen, gesamt }, onThema) {
+function themenkarte({ themen, gesamt }, onThema, pruefstand) {
   const liste = el('ul', { class: 'themenfortschritt', role: 'list' });
-  for (const thema of themen) liste.append(themenzeile(thema.titel, thema, onThema ? () => onThema(thema.id) : null));
+  for (const thema of themen) {
+    liste.append(themenzeile(thema.titel, thema, onThema ? () => onThema(thema.id) : null, pruefstand?.themen.get(thema.id)));
+  }
   return el('section', { class: 'karte' },
     el('p', { class: 'etikett' }, t('statistik.fortschritt')),
     el('h2', {}, t('statistik.gesamtSicher', { prozent: prozent(gesamt.anteil) })),
     el('p', { class: 'hinweis oben' }, t('statistik.sicherErklaerung')),
+    pruefstand?.gesamt.gesamt > 0 ? el('p', { class: 'hinweis' }, t('statistik.geprueft', pruefstand.gesamt)) : null,
     liste,
   );
 }
 
-function themenzeile(titel, z, onLernen) {
+function themenzeile(titel, z, onLernen, geprueft) {
   const anteilLernend = z.gesamt > 0 ? z.lernend / z.gesamt : 0;
   return el('li', {},
     el('p', { class: 'themenzeile' },
@@ -60,6 +66,7 @@ function themenzeile(titel, z, onLernen) {
     el('span', { class: 'lernend', style: `width: ${anteilLernend * 100}%` })),
     el('p', { class: 'leise themenzahlen' },
       t('statistik.zahlen', { sicher: z.sicher, lernend: z.lernend, neu: z.neu, gesamt: z.gesamt })),
+    geprueft?.gesamt > 0 ? el('p', { class: 'leise themenzahlen' }, t('statistik.geprueft', geprueft)) : null,
     onLernen && z.gesamt > 0
       ? el('button', { type: 'button', class: 'textknopf', onclick: onLernen }, t('statistik.themaLernen'))
       : null,
@@ -87,9 +94,8 @@ function schwaechenkarte({ modul, schwaechen }) {
 function schwaechenzeile(e, themenTitel) {
   const { frage } = e;
   let antwort;
-  if (frage.typ === 'mc') {
-    antwort = [el('p', { class: 'etikett' }, t('runde.richtigeAntwort')), el('p', { class: 'antworttext' }, frage.optionen[frage.richtig])];
-  } else if (frage.typ === 'zahl') antwort = zahlLoesung(frage);
+  if (frage.typ === 'mc') antwort = mcLoesung(frage);
+  else if (frage.typ === 'zahl') antwort = zahlLoesung(frage);
   else antwort = [el('p', { class: 'etikett' }, t('runde.musterantwort')), el('p', { class: 'antworttext' }, frage.musterantwort)];
   return el('li', {},
     el('details', {},

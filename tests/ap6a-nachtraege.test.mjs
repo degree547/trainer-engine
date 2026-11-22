@@ -145,8 +145,8 @@ test('F-34: Zusammenführen zweier Geräte zählt keine Antwort doppelt (für de
   assert.deepEqual(fuehreAntwortenZusammen(antworten, antworten).antworten, antworten);
 });
 
-test('F-34: Umstellung auf Datenbankversion 3 behält Lernstand und Profil', async () => {
-  assert.equal(DB_VERSION, 3);
+test('F-34: Umstellung von Datenbankversion 2 auf die aktuelle behält Lernstand und Profil', async () => {
+  assert.ok(DB_VERSION >= 3);
   const indexedDB = erzeugeIndexedDB();
   // Datenbank wie aus AP6 (Version 2: „lernstand“ und „profil“) anlegen.
   await new Promise((fertig) => {

@@ -4,11 +4,17 @@
 //
 // Multiple Choice (F-08):
 // - Genau eine Option ist richtig ("richtig" = Nummer der Option ab 0).
+// - Mehrfachauswahl (F-40): Ist "richtig" eine Liste von Nummern, können mehrere Optionen
+//   richtig sein. Der Lernende tippt alle zutreffenden an und lässt dann prüfen; richtig ist
+//   die Antwort nur, wenn genau die richtigen Optionen gewählt sind.
 // - Die Optionen werden für jede Anzeige neu gemischt, damit nicht die Position
 //   gelernt wird (in manchen amtlichen Katalogen steht die richtige Antwort immer an
 //   erster Stelle). Mit "mischen": false bleibt die Reihenfolge des Moduls, etwa wenn
 //   eine Option „Alle oben genannten“ lautet.
 // - Die Bewertung ist automatisch: richtig, wenn die richtige Option gewählt wurde.
+//
+// Prüfstatus der Kernpunkte (F-39): Das Modul gibt mit "kernpunkteStatus" einen Ausgangswert
+// vor. Hat der Lernende den Status in der App umgeschaltet (gespeichert in M7), gilt seine Wahl.
 //
 // Freitext (F-29, F-30):
 // - Die Antwort wird getippt; ein leeres Feld ist nach Rückfrage erlaubt.
@@ -51,13 +57,38 @@ export function buchstabe(position) {
   return String.fromCharCode(65 + position);
 }
 
+/** Ob eine MC-Frage mehrere richtige Optionen haben kann (F-40). */
+export function istMehrfach(frage) {
+  return frage.typ === 'mc' && Array.isArray(frage.richtig);
+}
+
+/** Nummern der richtigen Optionen einer MC-Frage, aufsteigend. */
+export function richtigeOptionen(frage) {
+  return (Array.isArray(frage.richtig) ? [...frage.richtig] : [frage.richtig]).sort((a, b) => a - b);
+}
+
 /**
  * Bewertet eine MC-Antwort.
- * @param {{richtig: number}} frage
- * @param {number} gewaehlt Nummer der gewählten Option im Modul (nicht die Anzeigeposition)
+ * @param {{richtig: number | number[]}} frage
+ * @param {number | Iterable<number> | null | undefined} gewaehlt Nummer der gewählten Option im
+ *   Modul (nicht die Anzeigeposition); bei Mehrfachauswahl die Menge der gewählten Nummern
  */
 export function bewerteMc(frage, gewaehlt) {
-  return gewaehlt === frage.richtig;
+  if (!Array.isArray(frage.richtig)) return gewaehlt === frage.richtig;
+  if (gewaehlt == null) return false;
+  const wahl = new Set(typeof gewaehlt === 'number' ? [gewaehlt] : gewaehlt);
+  return wahl.size === frage.richtig.length && frage.richtig.every((i) => wahl.has(i));
+}
+
+/**
+ * Ob die Kernpunkte einer Freitextfrage als geprüft gelten (F-39): die Wahl des Lernenden
+ * aus dem gespeicherten Prüfstatus (M7), sonst der Wert aus dem Modul.
+ * @param {{id: string, kernpunkteStatus?: string}} frage
+ * @param {{fragen: Object<string, {geprueft: boolean}>} | null} [pruefstatus]
+ */
+export function kernpunkteGeprueft(frage, pruefstatus) {
+  const eintrag = pruefstatus?.fragen?.[frage.id];
+  return eintrag ? eintrag.geprueft : frage.kernpunkteStatus === 'geprueft';
 }
 
 /** Ob eine getippte Freitextantwort leer ist (nur Leerzeichen zählen als leer). */
@@ -79,7 +110,7 @@ export function freitextVorschlag(frage, abgehakt) {
 
 /**
  * Herkunft der Antwort einer Frage (F-30): Frage, sonst Modul, sonst leer.
- * @returns {'amtlich' | 'buch' | 'eigen' | ''}
+ * @returns {'amtlich' | 'verband' | 'buch' | 'eigen' | ''}
  */
 export function herkunftVon(frage, modul) {
   return frage.herkunft ?? modul?.meta?.herkunft ?? '';

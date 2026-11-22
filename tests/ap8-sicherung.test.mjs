@@ -60,7 +60,7 @@ test('Export und Import auf einem zweiten Gerät stellen Streak, XP, Fächer und
   const { sicherung, verworfen } = pruefeSicherung(datei);
   assert.equal(verworfen, 0);
   const ergebnis = await geraet2.importiere(sicherung);
-  assert.deepEqual(ergebnis, { module: 1, karten: 2, antworten: 2 });
+  assert.deepEqual(ergebnis, { module: 1, karten: 2, antworten: 2, pruefstatus: 0 });
 
   assert.deepEqual((await geraet2.lade('sks')).lernstand, (await geraet1.lade('sks')).lernstand);
   const { profil } = await geraet2.ladeProfil();
@@ -76,7 +76,7 @@ test('dieselbe Sicherung zweimal importiert zählt nichts doppelt', async () => 
   const geraet2 = await oeffneSpeicher({ indexedDB: erzeugeIndexedDB() });
   await geraet2.importiere(sicherung);
   const zweites = await geraet2.importiere(sicherung);
-  assert.deepEqual(zweites, { module: 1, karten: 0, antworten: 0 });
+  assert.deepEqual(zweites, { module: 1, karten: 0, antworten: 0, pruefstatus: 0 });
   assert.equal(gesamtXp((await geraet2.ladeProfil()).profil), 30);
   assert.equal((await geraet2.ladeAntworten()).antworten.length, 1);
 });

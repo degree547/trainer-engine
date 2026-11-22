@@ -64,9 +64,10 @@ Die Engine besteht aus neun Modulen, die sich einzeln ändern lassen. Jede Anfor
 | F-08 | M3 Fragetypen | Multiple Choice mit einer richtigen Antwort | Muss |
 | F-09 | M3 Fragetypen | Zahleneingabe mit Toleranz und Einheit | Muss |
 | F-10 | M3 Fragetypen | Karteikarte mit Selbstbewertung (gewusst / nicht gewusst) | Soll |
-| F-11 | M3 Fragetypen | Mehrfachauswahl und Zuordnung | Kann |
+| F-11 | M3 Fragetypen | Zuordnung (Mehrfachauswahl ist als F-40 vorgezogen) | Kann |
+| F-40 | M3 Fragetypen | Multiple Choice mit mehreren richtigen Antworten: Alle zutreffenden Optionen werden angetippt und dann geprüft; richtig ist die Antwort nur, wenn genau die richtigen gewählt sind (Nachtrag) | Soll |
 | F-29 | M3 Fragetypen | Freitext: Die Antwort wird getippt, danach erscheinen Musterantwort und Kernpunkte als Checkliste. Die Selbstbewertung bestimmt das Leitner-Fach | Muss |
-| F-30 | M3 Fragetypen | Nach jeder Freitext-Antwort wird die Musterantwort angezeigt, mit Angabe ihrer Herkunft (amtlich, Buch oder eigen) | Muss |
+| F-30 | M3 Fragetypen | Nach jeder Freitext-Antwort wird die Musterantwort angezeigt, mit Angabe ihrer Herkunft (amtlich, Prüfungsverband, Buch oder eigen; „Prüfungsverband“ als Nachtrag) | Muss |
 | F-31 | M3 Fragetypen | KI-Bewertung des Freitexts gegen die Musterantwort über einen Proxy; nur online und nicht Teil von Version 1 | Kann |
 | F-33 | M3 Fragetypen | Freitext: Die Enter-Taste bestätigt die Eingabe, Shift+Enter erzeugt einen Zeilenumbruch (Nachtrag) | Soll |
 | F-12 | M4 Gamification | XP pro richtiger Antwort, Bonus für eine Runde ohne Fehler | Muss |
@@ -135,6 +136,13 @@ Kapitän markiert die Prüfungsreife, die beiden Admiralsränge belohnen das Wei
 - Dateinamen ohne Umlaute und Leerzeichen, abgelegt unter `content/sks/raenge/`, zum Beispiel `01-suesswassermatrose.svg`
 - Rechte: selbst erstellt, mit einem KI-Werkzeug erzeugt, dessen Bedingungen die Nutzung erlauben (zum Beispiel Copilot), oder frei lizenziert. Keine Kopien echter Dienstgradabzeichen, Logos oder bekannter Figuren. Weil das Repo öffentlich ist, steht die Herkunft jedes Bilds in `content/sks/raenge/HERKUNFT.md`
 
+**FKN (Version 1, nur lokal, Nachtrag)**
+
+- Fachkundenachweis für Seenotsignalmittel: Fragen- und Antwortenkatalog des Deutschen Segler-Verbands (Anlage 2 zur Prüfungsordnung FKN, Stand 01.01.2008), 60 Fragen, davon 11 Multiple Choice, vier davon mit mehreren richtigen Antworten (F-40)
+- Herkunft „Prüfungsverband“, nicht „amtlich“. Weil der Katalog nicht amtlich ist, liegen Quelle und Modul nur in `privat/` und werden über die Dateiauswahl geladen, nie committet und nie gehostet
+- Prüfungssimulation nach der Prüfungsordnung FKN: 15 Fragen, 30 Minuten, 2 Punkte je Frage, bestanden ab 24 von 30 Punkten
+- Dient als Gegenprobe für die Abnahme: ein zweites Modul eines anderen Fachs läuft ohne Änderung an der Engine
+
 **IAPP (später)**
 
 - Zweisprachiges Modul für CIPP/E und AIGP, Spezifikation liegt bereits vor
@@ -173,7 +181,7 @@ Version 1 gilt als abgenommen, wenn alle Muss-Anforderungen erfüllt sind und di
 - Eine Runde mit 10 Fragen ist in unter 8 Minuten durchspielbar
 - Falsch beantwortete Fragen erscheinen am Folgetag wieder
 - Export und anschließender Import auf einem zweiten Gerät stellt Streak, XP und Fächer wieder her
-- Ein Testmodul mit 20 Fragen eines anderen Fachs (eigene Übungsfragen, alle Fragetypen) läuft, ohne dass die Engine geändert wird; die echten IAPP-Module (CIPP/E, AIGP) folgen nach Version 1 (geändert am 20.11.2026)
+- Ein zweites Modul eines anderen Fachs läuft, ohne dass die Engine geändert wird: das FKN-Modul (Seenotsignalmittel, Katalog des DSV, nur lokal); Zahleneingabe und Generatoren sind durch das Beispielmodul und das SKS-Modul abgedeckt; die echten IAPP-Module (CIPP/E, AIGP) folgen nach Version 1 (geändert am 22.11.2026, vorher „Testmodul mit 20 eigenen Fragen“)
 - Eine Freitextfrage lässt sich beantworten, mit Musterantwort und Kernpunkten abgleichen und bestimmt das Leitner-Fach
 
 Nach Freigabe dieses Lastenhefts folgt der Projektplan mit Meilensteinen je Engine-Modul.
@@ -204,3 +212,6 @@ Diese Anforderungen sind erst während der Umsetzung entstanden und wurden nacht
 | 14.11.2026 | F-36 | Platzhalter statt Rangbilder in Version 1 | Eigene Bilder brauchen Zeit und kommen später |
 | 14.11.2026 | F-38 | Eigene Rangbilder als Kann-Anforderung, jederzeit vorziehbar | Bilder entstehen mit Copilot; wichtig erst, wenn die Platzhalter beim Lernen stören |
 | 20.11.2026 | F-39 | Prüfstatus der Kernpunkte in der App umschalten | Kernpunkte werden gegen die amtliche Antwort geprüft statt gegen das Buch; das geht am einfachsten nebenbei beim Lernen |
+| 22.11.2026 | – | FKN-Modul statt Testmodul mit eigenen Fragen für die Abnahme | Wunsch des Nutzers; der FKN wird zusammen mit dem SKS gebraucht |
+| 22.11.2026 | F-40 | Multiple Choice mit mehreren richtigen Antworten, aus F-11 vorgezogen | Im FKN-Katalog haben 4 der 11 MC-Fragen mehrere richtige Antworten |
+| 22.11.2026 | F-30 | Herkunft „Prüfungsverband“ | Der FKN-Katalog stammt vom DSV und ist nicht amtlich |

@@ -28,12 +28,14 @@
 //
 // Jede Frage (F-25): "id" (beginnt mit <meta.id>-), "thema", "typ", "frage",
 //   "erklaerung" (Text, darf leer sein), "quelle", optional "hinweis".
-//   typ "mc":       "optionen" (mindestens 2 Texte), "richtig" (Nummer der Option ab 0),
+//   typ "mc":       "optionen" (mindestens 2 Texte), "richtig" (Nummer der Option ab 0, oder für
+//                   Mehrfachauswahl eine Liste solcher Nummern ohne Doppelte, F-40),
 //                   optional "mischen" (true | false, Standard true: Reihenfolge wird gemischt;
-//                   false z. B. bei „Alle oben genannten“), optional "herkunft" (amtlich | buch | eigen)
+//                   false z. B. bei „Alle oben genannten“), optional "herkunft" (amtlich | verband | buch | eigen)
 //   typ "freitext": "musterantwort", "kernpunkte" (Liste von Texten),
 //                   "kernpunkteStatus" (ungeprueft | geprueft),
-//                   "herkunft" (amtlich | buch | eigen)              (F-32)
+//                   "herkunft" (amtlich | verband | buch | eigen)    (F-32)
+//   Herkunft "verband": Katalog eines Prüfungsverbands, der nicht amtlich ist (z. B. DSV).
 //   typ "zahl":     "loesung" (Zahl), "toleranz" (Zahl ab 0, erlaubte Abweichung nach oben
 //                   und unten), "einheit" (Text, darf leer sein, z. B. "kn", "°"),
 //                   optional "kreis" (Zahl > 0, z. B. 360: Abweichung im Kreis gemessen),
@@ -63,7 +65,7 @@ import { leseFormel, namenIn, platzhalterIn, rechne, wertebereich, zieheMitZwisc
 
 export const FORMAT_VERSION = 1;
 export const FRAGETYPEN = ['mc', 'freitext', 'zahl'];
-export const HERKUENFTE = ['amtlich', 'buch', 'eigen'];
+export const HERKUENFTE = ['amtlich', 'verband', 'buch', 'eigen'];
 export const PRUEFSTATUS = ['ungeprueft', 'geprueft'];
 
 const ID_MUSTER = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -439,11 +441,18 @@ function pruefeFrage(frage, pfad, ort, k) {
         if (!istText(o)) melde('inhalt.eintragKeinText', `${pfad}.optionen.${j}`, ort, { feld: 'optionen', nr: j + 1 });
       });
     }
+    const max = Array.isArray(optionen) ? Math.max(optionen.length - 1, 0) : 0;
+    const imBereich = (nr) => Number.isInteger(nr) && Array.isArray(optionen) && nr >= 0 && nr < optionen.length;
     if (frage.richtig === undefined) melde('inhalt.feldFehlt', `${pfad}.richtig`, ort, { feld: 'richtig' });
-    else if (!Number.isInteger(frage.richtig) || !Array.isArray(optionen)
-      || frage.richtig < 0 || frage.richtig >= optionen.length) {
-      melde('inhalt.richtigAusserhalb', `${pfad}.richtig`, ort,
-        { max: Array.isArray(optionen) ? Math.max(optionen.length - 1, 0) : 0 });
+    else if (Array.isArray(frage.richtig)) {
+      // Mehrfachauswahl (F-40)
+      if (frage.richtig.length < 1) melde('inhalt.zuWenige', `${pfad}.richtig`, ort, { feld: 'richtig', min: 1 });
+      frage.richtig.forEach((nr, j) => {
+        if (!imBereich(nr)) melde('inhalt.richtigAusserhalb', `${pfad}.richtig.${j}`, ort, { max });
+        else if (frage.richtig.indexOf(nr) !== j) melde('inhalt.richtigDoppelt', `${pfad}.richtig.${j}`, ort, { nr });
+      });
+    } else if (!imBereich(frage.richtig)) {
+      melde('inhalt.richtigAusserhalb', `${pfad}.richtig`, ort, { max });
     }
     if (frage.mischen !== undefined && typeof frage.mischen !== 'boolean') {
       melde('inhalt.keinWahrheitswert', `${pfad}.mischen`, ort, { feld: 'mischen' });

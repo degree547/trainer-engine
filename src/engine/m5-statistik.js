@@ -10,8 +10,11 @@
 // - Schwächenliste (F-18): Fragen mit mindestens MIN_VERSUCHE Antworten und mindestens
 //   einer falschen, nach Fehlerquote absteigend. Bei gleicher Quote zuerst die mit mehr
 //   Fehlern, dann das niedrigere Fach, dann die Reihenfolge im Modul.
+// - Prüfstatus (F-39): Je Thema wird gezählt, bei wie vielen Freitextfragen die Kernpunkte
+//   als geprüft gelten (Wahl des Lernenden aus M7, sonst Wert aus dem Modul).
 
 import { FAECHER } from './m2-lernlogik.js';
+import { kernpunkteGeprueft } from './m3-fragetypen.js';
 
 /** Ab diesem Fach gilt eine Frage als sicher (F-17). */
 export const SICHER_AB_FACH = 4;
@@ -33,6 +36,27 @@ function zaehle(zahlen, karte) {
 
 function mitAnteil(zahlen) {
   return { ...zahlen, anteil: zahlen.gesamt > 0 ? zahlen.sicher / zahlen.gesamt : 0 };
+}
+
+/**
+ * Prüfstatus der Kernpunkte je Thema (F-39): Freitextfragen gesamt und davon geprüft.
+ * @param {object} modul
+ * @param {object|null} pruefstatus aus M7
+ * @returns {{themen: Map<string, {gesamt: number, geprueft: number}>, gesamt: {gesamt: number, geprueft: number}}}
+ */
+export function pruefstandJeThema(modul, pruefstatus) {
+  const themen = new Map(modul.themen.map((thema) => [thema.id, { gesamt: 0, geprueft: 0 }]));
+  const gesamt = { gesamt: 0, geprueft: 0 };
+  for (const frage of modul.fragen) {
+    if (frage.typ !== 'freitext') continue;
+    const geprueft = kernpunkteGeprueft(frage, pruefstatus) ? 1 : 0;
+    for (const zahlen of [themen.get(frage.thema), gesamt]) {
+      if (!zahlen) continue;
+      zahlen.gesamt += 1;
+      zahlen.geprueft += geprueft;
+    }
+  }
+  return { themen, gesamt };
 }
 
 /**

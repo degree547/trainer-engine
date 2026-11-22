@@ -7,7 +7,7 @@
     "version": "1",
     "stand": "2026-11-12",
     "herkunft": "eigen",
-    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01), und enthält je ein Beispiel für Multiple Choice mit gemischter und mit fester Reihenfolge, für Freitext (F-08, F-29) und für eine Zahleneingabe mit Toleranz und Einheit (F-09). Dazu ein gesperrter Generator für Rechenaufgaben (F-28), der nicht in Runden erscheint."
+    "hinweis": "Inhaltsneutrales Testmodul. Zeigt, dass die Engine ein Modul aus einer Datei lädt (F-01), und enthält je ein Beispiel für Multiple Choice mit gemischter und mit fester Reihenfolge, für Mehrfachauswahl mit mehreren richtigen Antworten (F-40), für Freitext (F-08, F-29) und für eine Zahleneingabe mit Toleranz und Einheit (F-09). Dazu ein gesperrter Generator für Rechenaufgaben (F-28), der nicht in Runden erscheint."
   },
   "themen": [
     {
@@ -87,6 +87,25 @@
       "einheit": "min",
       "herkunft": "eigen",
       "erklaerung": "Eine Stunde hat 60 Minuten.",
+      "quelle": "eigen"
+    },
+    {
+      "id": "beispiel-006",
+      "thema": "beispiel-allgemein",
+      "typ": "mc",
+      "frage": "Welche dieser Tiere sind Säugetiere?",
+      "optionen": [
+        "Hund",
+        "Forelle",
+        "Wal",
+        "Amsel"
+      ],
+      "richtig": [
+        0,
+        2
+      ],
+      "herkunft": "eigen",
+      "erklaerung": "Hund und Wal sind Säugetiere, die Forelle ist ein Fisch, die Amsel ein Vogel.",
       "quelle": "eigen"
     }
   ],

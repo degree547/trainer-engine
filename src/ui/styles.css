@@ -317,3 +317,13 @@ main {
 .ergebnis.durchgefallen { border-color: var(--fehler); }
 .ergebnis.durchgefallen h2 { color: var(--fehler); }
 .ergebnis .punkte { margin: 0; font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Mehrfachauswahl (AP11, F-40): Liste der richtigen Antworten */
+.antwortliste { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* Prüfstatus der Kernpunkte (AP11, F-39) */
+.pruefstatus { margin-top: 0.75rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+.pruefstatus .hinweis { margin: 0; }
+.pruefstatus.geprueft { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.pruefstatus .textknopf { min-height: 2.75rem; }
+.knopf.klein { width: auto; min-height: 2.75rem; padding: 0.5rem 1rem; font-size: 0.9375rem; margin-top: 0.5rem; }

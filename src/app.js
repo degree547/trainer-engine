@@ -11,9 +11,9 @@ import {
 } from './engine/m4-gamification.js';
 import {
   oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, freitextEintrag,
-  pruefeSicherung, dateinameSicherung,
+  pruefeSicherung, dateinameSicherung, neuerPruefstatus, setzePruefstatus,
 } from './engine/m7-speicherung.js';
-import { fortschrittJeThema, schwaechenliste } from './engine/m5-statistik.js';
+import { fortschrittJeThema, schwaechenliste, pruefstandJeThema } from './engine/m5-statistik.js';
 import { pruefungsregeln, bildePruefbogen } from './engine/m6-pruefung.js';
 import { mitGeneratoren, erneuere } from './engine/m9-generatoren.js';
 import { ladeTexte, t, bevorzugteSprache, merkeSprache, sprache, zahltext } from './ui/i18n.js';
@@ -38,6 +38,7 @@ const zustand = {
   profil: neuesProfil(), profilSpeichern: true, profilVerworfen: 0, profilFehler: null, offeneProfilAenderungen: 0,
   thema: null, // gewähltes Thema für Runden (F-06), null = alle Themen
   sicherungMeldung: null, // Rückmeldung nach Export oder Import (F-22), wird einmal angezeigt
+  pruefstatus: neuerPruefstatus(), // Prüfstatus der Kernpunkte des geladenen Moduls (F-39)
 };
 
 // Datum der letzten exportierten Sicherung, nur als Hinweis für diesen Browser (localStorage).
@@ -132,6 +133,25 @@ function speichereFreitext(frage, text, gewusst, modus) {
   if (!speicher || !modul) return;
   speicher.speichereAntwort(freitextEintrag({ modul: modul.meta.id, frage: frage.id, text, gewusst, modus }))
     .catch((fehler) => { zustand.speicherFehler = speicherCode(fehler, 'speicher.schreibfehler'); });
+}
+
+/**
+ * Setzt den Prüfstatus der Kernpunkte einer Frage (F-39): sofort in der App, danach in der
+ * IndexedDB. Dort wird mit dem gespeicherten Stand zusammengeführt (zweiter Tab).
+ */
+function aenderePruefstatus(frage, geprueft) {
+  const { speicher, modul } = zustand;
+  if (!modul) return;
+  zustand.pruefstatus = setzePruefstatus(zustand.pruefstatus, frage.id, geprueft);
+  if (!speicher) return;
+  speicher.setzePruefstatus(modul.meta.id, frage.id, geprueft)
+    .then((gespeichert) => { if (zustand.modul === modul) zustand.pruefstatus = gespeichert; })
+    .catch((fehler) => { zustand.speicherFehler = speicherCode(fehler, 'speicher.schreibfehler'); });
+}
+
+/** Ob der Prüfknopf gezeigt wird: nur mit Speicher, sonst wäre die Wahl beim Neuladen weg. */
+function pruefknopf() {
+  return zustand.speicher ? aenderePruefstatus : undefined;
 }
 
 function zurStartseite() {
@@ -240,6 +260,7 @@ function zurStatistik() {
     modul,
     fortschritt: fortschrittJeThema(modul, lernstand),
     schwaechen: schwaechenliste(modul, lernstand),
+    pruefstand: pruefstandJeThema(modul, zustand.pruefstatus),
     onZurueck: zurStartseite,
     onThema: (id) => { waehleThema(id); zurStartseite(); },
   });
@@ -257,6 +278,8 @@ function zurPruefung() {
     bildeBogen: () => bildePruefbogen(modul),
     onZurueck: zurStartseite,
     onFehlerUeben: (fragen) => starteRunde('fehler', fragen),
+    holePruefstatus: () => zustand.pruefstatus,
+    onPruefstatus: pruefknopf(),
   });
 }
 
@@ -295,6 +318,8 @@ function starteRunde(modus, fragen) {
     },
     holeFaecher: () => lernUebersicht(modul, zustand.lernstand, heute(), { thema: zustand.thema }).faecher,
     onFertig: zurStartseite,
+    holePruefstatus: () => zustand.pruefstatus,
+    onPruefstatus: pruefknopf(),
   });
 }
 
@@ -314,12 +339,16 @@ async function speichere() {
 
 /** Lädt den gespeicherten Lernstand zum gerade geladenen Modul. */
 async function ladeLernstand() {
-  Object.assign(zustand, { lernstand: neuerLernstand(), verworfen: 0, thema: zustand.modul ? ladeThema(zustand.modul) : null });
+  Object.assign(zustand, {
+    lernstand: neuerLernstand(), verworfen: 0, pruefstatus: neuerPruefstatus(),
+    thema: zustand.modul ? ladeThema(zustand.modul) : null,
+  });
   const { speicher, modul } = zustand;
   if (!speicher || !modul) return;
   try {
     const { lernstand, verworfen } = await speicher.lade(modul.meta.id);
-    Object.assign(zustand, { lernstand, verworfen });
+    const geprueft = await speicher.ladePruefstatus(modul.meta.id);
+    Object.assign(zustand, { lernstand, verworfen: verworfen + geprueft.verworfen, pruefstatus: geprueft.pruefstatus });
   } catch (fehler) {
     // Nicht speichern, damit ein unlesbarer oder neuerer Stand nicht überschrieben wird.
     Object.assign(zustand, { speicher: null, speicherFehler: speicherCode(fehler, 'speicher.lesefehler') });
