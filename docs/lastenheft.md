@@ -85,6 +85,10 @@ Die Engine besteht aus neun Modulen, die sich einzeln ändern lassen. Jede Anfor
 | F-22 | M7 Speicherung | Export und Import des Fortschritts als Datei | Muss |
 | F-23 | M7 Speicherung | Der Fortschritt bleibt erhalten, wenn ein Modul aktualisiert wird (stabile Frage-IDs) | Muss |
 | F-34 | M7 Speicherung | Jede Freitext-Antwort wird mit Frage-ID, Zeitstempel, eingegebenem Text und Selbstbewertung lokal gespeichert und ist im Export (F-22) enthalten (Nachtrag) | Muss |
+| F-41 | M7 Speicherung | Am Ende jeder Runde lässt sich der Fortschritt mit einem Tipp als Sicherungsdatei (F-22) sichern: auf dem Smartphone über das Teilen-Menü (Ziel frei wählbar, z. B. Cloud-Speicher oder „In Dateien speichern“), ohne Teilen-Menü als Download. Grund: Browser, die Websitedaten beim Schließen löschen (z. B. Brave), sollen ohne Ausnahme für die App nutzbar sein (Nachtrag) | Muss |
+| F-42 | M7 Speicherung | Startet die App ohne gespeicherten Lernstand und ohne XP, bietet sie gleich an, eine Sicherungsdatei zu laden (Import mit Zusammenführen wie F-22) (Nachtrag) | Muss |
+| F-43 | M7 Speicherung | Jede Antwort aller Fragetypen wird mit Frage-ID, Modul, Katalogstand des Moduls, Zeitpunkt, Eingabe (Text, gewählte Optionen oder Zahl), Ergebnis und Rundenart lokal gespeichert, bei Freitext zusätzlich mit den abgehakten Kernpunkten; enthalten im Export (F-22). Erweitert F-34 und ist Grundlage für F-31 und F-35 (Nachtrag) | Soll |
+| F-44 | M7 Speicherung | Zu jeder gespeicherten Antwort werden Fragetext, Musterantwort oder richtige Antwort und Kernpunkte so mitgespeichert, wie sie beim Antworten galten, damit die Sicherung ohne Moduldatei auswertbar ist (z. B. später durch eine KI) (Nachtrag) | Soll |
 | F-39 | M7 Speicherung | Der Prüfstatus der Kernpunkte lässt sich je Frage in der App auf „geprüft“ setzen und zurücknehmen; er wird lokal gespeichert, ist im Export (F-22) enthalten und übersteht Updates des Moduls (Nachtrag) | Soll |
 | F-24 | M8 Inhaltsformat | Ein Modul ist eine JSON-Datei mit Metadaten, Themen und Fragen | Muss |
 | F-25 | M8 Inhaltsformat | Jede Frage hat ID, Thema, Typ, richtige Antwort, Erklärung und Quellenangabe | Muss |
@@ -161,7 +165,7 @@ Die App muss auf dem Smartphone ohne Netz zuverlässig laufen und ohne laufende 
 - **Sprache:** Oberfläche auf Deutsch, Texte in einer Datei, damit eine zweite Sprache später möglich bleibt
 - **Technologie (Architekturentscheidung):** reines HTML, CSS und JavaScript (ES-Module) ohne Framework und ohne Build-Schritt, plattformunabhängig im Browser; jedes Engine-Modul ist eine eigene Datei, jedes Inhaltsmodul eine JSON-Datei
 - **Installation und Hosting:** Service Worker und Manifest für Offline-Betrieb und Installation, Auslieferung über statisches Hosting mit https
-- **Datenhaltung:** IndexedDB für den Lernstand; Export und Import (F-22) dienen zugleich als Datensicherung, weil Browser Daten selten genutzter Seiten löschen können
+- **Datenhaltung:** IndexedDB für den Lernstand; Export und Import (F-22) dienen zugleich als Datensicherung, weil Browser Daten selten genutzter Seiten löschen können; löscht der Browser die Websitedaten bei jedem Schließen (z. B. Brave mit „Vergiss mich“ oder „beim Beenden löschen“), sichert die App nach jeder Runde über das Teilen-Menü (F-41) und bietet beim leeren Start das Laden der Sicherung an (F-42)
 
 ## Rechtliche Rahmenbedingungen
 
@@ -215,3 +219,5 @@ Diese Anforderungen sind erst während der Umsetzung entstanden und wurden nacht
 | 22.11.2026 | – | FKN-Modul statt Testmodul mit eigenen Fragen für die Abnahme | Wunsch des Nutzers; der FKN wird zusammen mit dem SKS gebraucht |
 | 22.11.2026 | F-40 | Multiple Choice mit mehreren richtigen Antworten, aus F-11 vorgezogen | Im FKN-Katalog haben 4 der 11 MC-Fragen mehrere richtige Antworten |
 | 22.11.2026 | F-30 | Herkunft „Prüfungsverband“ | Der FKN-Katalog stammt vom DSV und ist nicht amtlich |
+| 24.11.2026 | F-41, F-42 | Sicherung nach jeder Runde über das Teilen-Menü, Angebot zum Laden beim leeren Start | Brave löscht auf dem Smartphone die Websitedaten beim Schließen, der Fortschritt war nach jedem Neustart weg; eine Ausnahme für die App in Brave kommt aus Datenschutzgründen nicht in Frage |
+| 24.11.2026 | F-43, F-44 | Speicherformat der Antworten für eine spätere KI-Bewertung: alle Fragetypen, abgehakte Kernpunkte, Katalogstand, Frage und Musterantwort | Wird zusammen mit der Sicherung umgesetzt, weil beides die Sicherungsdatei ändert; ohne diese Angaben wären frühe Antworten später nicht auswertbar |

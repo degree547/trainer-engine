@@ -36,7 +36,7 @@ MS1 liefert eine lernbare App mit dem amtlichen Katalog, MS2 die Motivation, MS3
 
 ## Arbeitspakete
 
-Elf Arbeitspakete und die Nachträge AP6A und AP7A (AP9 ist in AP9A und AP9B geteilt) decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen, die für den SKS gebraucht werden. Jedes Paket ist eine abgeschlossene Claude-Code-Sitzung mit eigenem Commit.
+Elf Arbeitspakete und die Nachträge AP6A, AP7A und AP11A (AP9 ist in AP9A und AP9B geteilt) decken alle Muss-Anforderungen ab, dazu die Soll-Anforderungen, die für den SKS gebraucht werden. Jedes Paket ist eine abgeschlossene Claude-Code-Sitzung mit eigenem Commit.
 
 | AP | Inhalt | Module | Anforderungen | Ergebnis | Meilenstein | Status |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -55,12 +55,15 @@ Elf Arbeitspakete und die Nachträge AP6A und AP7A (AP9 ist in AP9A und AP9B get
 | AP9B | Teil 2 mit Buch: Rechenwege für Kurs, Peilung, Missweisung, Deviation, Wind- und Stromversatz, Tests gegen Beispielaufgaben aus dem Buch, danach Freigabe | M9 | F-28 | Generierte Rechenaufgaben mit geprüften Lösungen | MS3 | erledigt |
 | AP10 | Prüfungssimulation | M6 | F-20 | Simulation mit Auswertung je Thema | MS4 | erledigt |
 | AP11 | Prüfstatus „geprüft“ in der App umschalten, Multiple Choice mit mehreren richtigen Antworten, FKN-Modul (nur lokal) als zweites Fach, Prüfungsregeln mit ELWIS abgleichen, Abnahme | M7, M3, M8, Inhalt | F-39, F-40, F-30, Abnahmekriterien | Version 1 abgenommen | MS4 | Code erledigt, Abnahme offen |
+| AP11A | Nachtrag: Sicherung nach jeder Runde über das Teilen-Menü, Angebot zum Laden beim leeren Start, erweitertes Speicherformat der Antworten für eine spätere KI-Bewertung | M7, M3, UI | F-41, F-42, F-43, F-44 | Fortschritt übersteht das Löschen der Browserdaten durch Brave; Sicherung enthält alle Antworten samt Frage, Musterantwort und abgehakten Kernpunkten | MS4 | offen |
 
 **Reihenfolge ab AP9 (geändert am 15.11.2026):** Das Buch ist noch nicht da, die Rechenwege lassen sich ohne seine Beispielaufgaben nicht prüfen. Deshalb ist AP9 geteilt und die Reihenfolge lautet: AP10, AP9A, AP9B, AP11. AP9B und AP11 beginnen, sobald das Buch da ist. Kommt es erst nach dem 20.12.2026, wird gesondert entschieden, ob AP9B trotz Feature-Stopp noch umgesetzt wird.
 
 **AP11 verschlankt (geändert am 20.11.2026):** Fragen und Antworten sind amtlich und vollständig; ungeprüft sind nur die daraus abgeleiteten Kernpunkte. Sie werden gegen die amtliche Antwort geprüft, nicht gegen das Buch, und zwar nebenbei beim Lernen über einen Knopf in der App (F-39). Buchfotos braucht AP11 nicht mehr. Ergänzende Erklärungen aus dem Buch sind auf die Zeit nach Version 1 verschoben (`docs/ideen.md`). Das IAPP-Abnahmekriterium ist durch ein allgemeines Testmodul ersetzt.
 
 **AP11 mit FKN-Modul (geändert am 22.11.2026):** Statt eines Testmoduls mit 20 eigenen Fragen dient der Fragen- und Antwortenkatalog zum Fachkundenachweis Seenotsignalmittel (FKN) als zweites Fach. Er stammt vom DSV und ist nicht amtlich; Quelle und Modul liegen deshalb nur in `privat/`. Vier seiner Multiple-Choice-Fragen haben mehrere richtige Antworten; dafür wird F-40 (aus F-11) vorgezogen. Neue Herkunft „Prüfungsverband“ (F-30).
+
+**AP11A eingefügt (24.11.2026):** Auf dem Smartphone (Android, Brave) war der Fortschritt nach jedem Neustart weg, weil Brave die Websitedaten beim Schließen löscht. Eine Ausnahme für die App in Brave kommt aus Datenschutzgründen nicht in Frage. Deshalb sichert die App nach jeder Runde mit einem Tipp über das Teilen-Menü (F-41) und bietet beim leeren Start das Laden der Sicherung an (F-42). Weil beides die Sicherungsdatei ändert, wird im selben AP das Speicherformat der Antworten für eine spätere KI-Bewertung erweitert (F-43, F-44). AP11A kommt vor der Abnahme von AP11; die Abnahmepunkte auf dem Smartphone werden danach geprüft.
 
 **Status der Arbeitspakete**
 
@@ -119,7 +122,7 @@ Das größte Risiko ist nicht technisch: Das Bauen verdrängt das Lernen.
 | Fehler in den Rechenwegen | Falsches wird gelernt | Tests gegen Beispiele aus dem Buch, keine Freigabe ohne grüne Tests |
 | Import des Katalogs unvollständig | Fragen fehlen oder sind verstümmelt | Abgleich der Fragenzahl je Thema, Stichproben gegen das Original |
 | Kernpunkte ungenau | Selbstbewertung zu großzügig | Stichproben, offizielle Antwort immer sichtbar |
-| Datenverlust im Browser | Streak und Fächer weg | Regelmäßiger Export, Erinnerung beim App-Start |
+| Datenverlust im Browser | Streak und Fächer weg | Sicherung nach jeder Runde über das Teilen-Menü, Laden beim leeren Start (AP11A); tritt bei Brave mit Löschen beim Schließen bei jedem Neustart ein |
 | Katalog wird geändert | Veraltete Fragen | Stand des Katalogs im Modul vermerken, vor der Prüfung bei ELWIS prüfen |
 
 ## Nächste Schritte
