@@ -1,7 +1,7 @@
 // Service Worker: speichert alle App-Dateien, damit die App offline läuft.
 // Bei jeder inhaltlichen Änderung CACHE_VERSION erhöhen und neue Dateien in DATEIEN eintragen.
 
-const CACHE_VERSION = 'v14';
+const CACHE_VERSION = 'v15';
 const CACHE_NAME = `trainer-engine-${CACHE_VERSION}`;
 
 const DATEIEN = [
@@ -32,6 +32,7 @@ const DATEIEN = [
   'src/ui/zahl.js',
   'src/ui/mc.js',
   'src/ui/pruefstatus.js',
+  'src/ui/sichern.js',
   'src/ui/styles.css',
   'src/i18n/de.json',
   'src/i18n/en.json',

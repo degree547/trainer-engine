@@ -172,7 +172,7 @@
   "einstellungen.titel": "Settings",
   "einstellungen.sprache": "Language",
   "sicherung.titel": "Backup",
-  "sicherung.erklaerung": "The backup file contains your progress, XP, streak, free-text answers and key-point checks. Importing merges and never overwrites – so you can also move your progress to a second device.",
+  "sicherung.erklaerung": "The backup file contains your progress, XP, streak, all answers (with question and model answer) and key-point checks. Importing merges and never overwrites – so you can also move your progress to a second device.",
   "sicherung.exportieren": "Export backup",
   "sicherung.importieren": "Import backup",
   "sicherung.letzte": "Last backup on this device: {datum}",
@@ -180,7 +180,7 @@
   "sicherung.nichtVerfuegbar": "Backups are not possible without browser storage.",
   "sicherung.exportiert": "Backup saved: {name}",
   "sicherung.exportFehler": "The backup could not be created.",
-  "sicherung.importiert": "Backup imported: {karten} new or newer cards from {module} module(s), {antworten} new free-text answers, {pruefstatus} new or newer key-point check entries. XP and streak have been merged.",
+  "sicherung.importiert": "Backup imported: {karten} new or newer cards from {module} module(s), {antworten} new answers, {pruefstatus} new or newer key-point check entries. XP and streak have been merged.",
   "sicherung.verworfen": "{anzahl} damaged entries in the file were skipped.",
   "sicherung.keinJson": "The file is not readable JSON. Nothing was changed.",
   "sicherung.keineSicherung": "The file is not a backup of this app. Nothing was changed.",
@@ -274,5 +274,13 @@
   "pruefstatus.zuruecknehmen": "Undo",
   "pruefstatus.istGeprueft": "✓ Key points checked",
   "pruefstatus.anleitung": "Do the key points match the model answer? Then mark them as checked.",
-  "statistik.geprueft": "Key points checked: {geprueft} of {gesamt} free-text questions"
+  "statistik.geprueft": "Key points checked: {geprueft} of {gesamt} free-text questions",
+  "sicherung.sichern": "Back up progress",
+  "sicherung.nochmalSichern": "Back up again",
+  "sicherung.nachRunde": "Saves the backup file with one tap, on a phone via the share menu (e.g. cloud storage or “Save to Files”). Important if your browser deletes site data when it closes.",
+  "sicherung.geteilt": "Backup handed over: {name}",
+  "leerstart.titel": "Load a backup?",
+  "leerstart.erklaerung": "No progress is stored on this device yet. If you have a backup file, load it to continue. If your browser deletes its data when it closes, you will need to do this after every restart.",
+  "leerstart.laden": "Load backup",
+  "leerstart.neu": "Start fresh"
 }

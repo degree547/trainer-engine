@@ -10,7 +10,7 @@ import {
   rangVon, aufstiegVon,
 } from './engine/m4-gamification.js';
 import {
-  oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, freitextEintrag,
+  oeffneSpeicher, bitteUmDauerhaftenSpeicher, fuehreZusammen, SpeicherFehler, antwortEintrag, istLeereSicherung,
   pruefeSicherung, dateinameSicherung, neuerPruefstatus, setzePruefstatus,
 } from './engine/m7-speicherung.js';
 import { fortschrittJeThema, schwaechenliste, pruefstandJeThema } from './engine/m5-statistik.js';
@@ -39,6 +39,7 @@ const zustand = {
   thema: null, // gewähltes Thema für Runden (F-06), null = alle Themen
   sicherungMeldung: null, // Rückmeldung nach Export oder Import (F-22), wird einmal angezeigt
   pruefstatus: neuerPruefstatus(), // Prüfstatus der Kernpunkte des geladenen Moduls (F-39)
+  leererStart: false, // nichts gespeichert: Laden einer Sicherung anbieten (F-42)
 };
 
 // Datum der letzten exportierten Sicherung, nur als Hinweis für diesen Browser (localStorage).
@@ -127,11 +128,11 @@ function fortschritt(profil, tag) {
   return { ...f, rang: rangVon(zustand.modul?.raenge, f.level.level) };
 }
 
-/** Speichert eine getippte Freitext-Antwort mit Selbstbewertung (F-34). */
-function speichereFreitext(frage, text, gewusst, modus) {
+/** Speichert eine Antwort mit Ergebnis, Eingabe und der Frage, wie sie galt (F-34, F-43, F-44). */
+function speichereAntwort(frage, gewusst, modus, antwort) {
   const { speicher, modul } = zustand;
   if (!speicher || !modul) return;
-  speicher.speichereAntwort(freitextEintrag({ modul: modul.meta.id, frage: frage.id, text, gewusst, modus }))
+  speicher.speichereAntwort(antwortEintrag({ modul, frage, gewusst, modus, antwort }))
     .catch((fehler) => { zustand.speicherFehler = speicherCode(fehler, 'speicher.schreibfehler'); });
 }
 
@@ -184,6 +185,9 @@ function zurStartseite() {
       onExport: exportiereSicherung,
       onImport: importiereSicherung,
     },
+    leererStart: zustand.leererStart && zustand.speicher
+      ? { onImport: importiereSicherung, onSpaeter: () => { zustand.leererStart = false; zurStartseite(); } }
+      : null,
   });
   if (zustand.sicherungMeldung) {
     // Nach Export oder Import die Rückmeldung zeigen statt nach oben zu springen.
@@ -204,18 +208,62 @@ async function wechsleSprache(neu) {
   document.getElementById('sprachwahl')?.focus();
 }
 
+/** Bietet eine Datei zum Herunterladen an. */
+function ladeHerunter(json, name) {
+  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+  const link = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function merkeSicherung() {
+  try { localStorage.setItem(SICHERUNG_SCHLUESSEL, heute()); } catch { /* nur ein Hinweis */ }
+}
+
+/**
+ * Sicherung am Rundenende (F-41): über das Teilen-Menü, wenn der Browser Dateien teilen kann
+ * (Smartphone), sonst als Download. Schließt der Lernende das Teilen-Menü, ist das kein Fehler.
+ * @returns {Promise<{art: 'ok'|'fehler'|'abgebrochen', text?: string}>}
+ */
+async function sichereNachRunde() {
+  try {
+    // ladeSicherung reiht sich hinter die letzten Schreibvorgänge ein: die letzte Antwort ist dabei.
+    const inhalt = await zustand.speicher.ladeSicherung();
+    const name = dateinameSicherung(heute());
+    const json = JSON.stringify(inhalt, null, 1);
+    const datei = typeof File === 'function' ? new File([json], name, { type: 'application/json' }) : null;
+    if (datei && navigator.canShare?.({ files: [datei] })) {
+      try {
+        await navigator.share({ files: [datei], title: name });
+        merkeSicherung();
+        return { art: 'ok', text: t('sicherung.geteilt', { name }) };
+      } catch (fehler) {
+        if (fehler?.name === 'AbortError') return { art: 'abgebrochen' };
+        // Teilen verweigert (z. B. zu lange nach dem Tipp): als Download weiter.
+      }
+    }
+    ladeHerunter(json, name);
+    merkeSicherung();
+    return { art: 'ok', text: t('sicherung.exportiert', { name }) };
+  } catch (fehler) {
+    return { art: 'fehler', text: t(speicherCode(fehler, 'sicherung.exportFehler')) };
+  }
+}
+
+/** Knopf zum Sichern am Rundenende nur mit Speicher im Browser. */
+function sichernKnopf() {
+  return zustand.speicher ? sichereNachRunde : undefined;
+}
+
 /** Speichert die Sicherungsdatei auf dem Gerät (F-22). */
 async function exportiereSicherung() {
   try {
     const inhalt = await zustand.speicher.ladeSicherung();
     const name = dateinameSicherung(heute());
-    const url = URL.createObjectURL(new Blob([JSON.stringify(inhalt, null, 1)], { type: 'application/json' }));
-    const link = Object.assign(document.createElement('a'), { href: url, download: name });
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    try { localStorage.setItem(SICHERUNG_SCHLUESSEL, heute()); } catch { /* nur ein Hinweis */ }
+    ladeHerunter(JSON.stringify(inhalt, null, 1), name);
+    merkeSicherung();
     zustand.sicherungMeldung = { art: 'ok', text: t('sicherung.exportiert', { name }) };
   } catch (fehler) {
     zustand.sicherungMeldung = { art: 'fehler', text: t(speicherCode(fehler, 'sicherung.exportFehler')) };
@@ -241,6 +289,7 @@ async function importiereSicherung(datei) {
   }
   try {
     const ergebnis = await zustand.speicher.importiere(geprueft.sicherung);
+    zustand.leererStart = false;
     // Gespeicherten Stand neu laden, damit Startseite, Statistik und Profil ihn zeigen.
     await ladeProfil();
     await ladeLernstand();
@@ -280,6 +329,9 @@ function zurPruefung() {
     onFehlerUeben: (fragen) => starteRunde('fehler', fragen),
     holePruefstatus: () => zustand.pruefstatus,
     onPruefstatus: pruefknopf(),
+    // Antworten der Simulation werden gespeichert (F-43), ändern aber weder Fächer noch XP.
+    onAntworten: (liste) => liste.forEach(({ frage, richtig, antwort }) => speichereAntwort(frage, richtig, 'simulation', antwort)),
+    onSichern: sichernKnopf(),
   });
 }
 
@@ -304,9 +356,10 @@ function starteRunde(modus, fragen) {
     modul,
     themenTitel: new Map(modul.themen.map((thema) => [thema.id, thema.titel])),
     onBewertung: (frage, richtig, uebung, rundenModus, antwort) => {
+      zustand.leererStart = false;
       zustand.lernstand = bewerte(zustand.lernstand, frage.id, richtig, heute(), { uebung });
       speichere();
-      if (frage.typ === 'freitext') speichereFreitext(frage, antwort, richtig, rundenModus);
+      speichereAntwort(frage, richtig, rundenModus, antwort);
       return aendereProfil((profil) => vergibAntwort(profil, { richtig, modus: rundenModus }, heute())).xp;
     },
     onRundenende: (runde) => {
@@ -320,6 +373,7 @@ function starteRunde(modus, fragen) {
     onFertig: zurStartseite,
     holePruefstatus: () => zustand.pruefstatus,
     onPruefstatus: pruefknopf(),
+    onSichern: sichernKnopf(),
   });
 }
 
@@ -364,6 +418,16 @@ async function ladeProfil() {
     zustand.profilVerworfen = verworfen;
   } catch (fehler) {
     Object.assign(zustand, { profilSpeichern: false, profilFehler: speicherCode(fehler, 'speicher.lesefehler') });
+  }
+}
+
+/** Prüft beim Start, ob weder Lernstand noch XP gespeichert sind (F-42). */
+async function pruefeLeererStart() {
+  if (!zustand.speicher) return;
+  try {
+    zustand.leererStart = istLeereSicherung(await zustand.speicher.ladeSicherung());
+  } catch {
+    zustand.leererStart = false; // Ein unlesbarer Stand ist nicht leer; dazu gibt es eigene Hinweise.
   }
 }
 
@@ -413,6 +477,7 @@ async function start() {
     zustand.speicherFehler = speicherCode(fehler, 'speicher.nichtVerfuegbar');
   }
   await ladeProfil();
+  await pruefeLeererStart();
 
   await ladeStandard();
 }

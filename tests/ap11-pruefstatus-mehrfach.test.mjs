@@ -172,7 +172,7 @@ test('F-39 und F-22: Prüfstatus steckt in der Sicherung und wird beim Import zu
   await geraet1.setzePruefstatus('sks', 'sks-recht-001', true, 100);
   await geraet1.setzePruefstatus('sks', 'sks-recht-002', false, 300);
   const datei = alsDatei(await geraet1.ladeSicherung());
-  assert.equal(datei.version, 2);
+  assert.ok(datei.version >= 2, 'ab Version 2 mit Prüfstatus');
   assert.deepEqual(Object.keys(datei.pruefstatus), ['sks']);
 
   const geraet2 = await oeffneSpeicher({ indexedDB: erzeugeIndexedDB() });
@@ -194,7 +194,7 @@ test('F-22: Sicherung der Version 1 (ohne Prüfstatus) wird weiter gelesen', () 
   const alt = { app: 'trainer-engine', art: 'sicherung', version: 1, erstellt: '2026-11-14T10:00:00.000Z', profil: null, lernstand: {}, antworten: [] };
   const { sicherung } = pruefeSicherung(alt);
   assert.deepEqual(sicherung.pruefstaende, {});
-  assert.throws(() => pruefeSicherung({ ...alt, version: 3 }), (e) => e.code === 'sicherung.neuereVersion');
+  assert.throws(() => pruefeSicherung({ ...alt, version: 99 }), (e) => e.code === 'sicherung.neuereVersion');
   assert.throws(() => pruefeSicherung({ ...alt, version: 2, pruefstatus: [] }), (e) => e.code === 'sicherung.unlesbar');
   assert.throws(() => pruefeSicherung({ ...alt, version: 2, pruefstatus: { sks: { version: 9, fragen: {} } } }),
     (e) => e.code === 'sicherung.neuereVersion');

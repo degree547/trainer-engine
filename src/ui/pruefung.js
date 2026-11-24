@@ -17,6 +17,7 @@ import {
 import { zahlfeld, zahlUngueltig, zahlLoesung, mitEinheit } from './zahl.js';
 import { mcLoesung, mehrfachHinweis, optionstexte } from './mc.js';
 import { pruefstatusZeile } from './pruefstatus.js';
+import { sicherungskarte } from './sichern.js';
 import { endeUm, restzeit, zeittext, werteAus } from '../engine/m6-pruefung.js';
 
 // Ab dieser Restzeit wird die Uhr hervorgehoben.
@@ -32,6 +33,8 @@ const KNAPP_MS = 5 * 60_000;
  *   onFehlerUeben: (fragen: object[]) => void,
  *   holePruefstatus?: () => object | null, // Prüfstatus der Kernpunkte (F-39) aus M7
  *   onPruefstatus?: (frage: object, geprueft: boolean) => void,
+ *   onAntworten?: (liste: {frage: object, richtig: boolean, antwort: object}[]) => void, // Speichern (F-43)
+ *   onSichern?: () => Promise<object>,    // Sicherung nach der Auswertung (F-41)
  *   jetzt?: () => number,                 // austauschbar für Tests
  * }} sim
  */
@@ -52,6 +55,8 @@ export function zeigePruefung(ziel, sim) {
   let zuBewerten = [];          // Freitext-Fragen mit Antwort
   let bewertNr = 0;
   let abgehakt = new Set();
+  const abgehaktJeFrage = new Map(); // Frage-ID → abgehakte Kernpunkte beim Bewerten (F-43)
+  let gespeichert = false;          // Antworten nur einmal je Simulation speichern
 
   // --- 1. Übersicht ------------------------------------------------------
 
@@ -351,6 +356,7 @@ export function zeigePruefung(ziel, sim) {
     const gewusst = freitextVorschlag(frage, abgehakt).gewusst;
     const bewerte = (richtig) => {
       bewertungen.set(frage.id, richtig);
+      abgehaktJeFrage.set(frage.id, [...abgehakt]);
       bewertNr += 1;
       if (bewertNr < zuBewerten.length) zeichneBewertung();
       else zeichneAuswertung();
@@ -382,8 +388,20 @@ export function zeigePruefung(ziel, sim) {
 
   // --- 4. Auswertung -----------------------------------------------------
 
+  /** Eingabe zu einer Frage im Format für die gespeicherte Antwort (F-43). */
+  function eingabeVon(frage) {
+    const a = antworten.get(frage.id);
+    if (frage.typ === 'mc') return { gewaehlt: a ?? null };
+    if (frage.typ === 'zahl') return { eingabe: a ?? '' };
+    return { text: a ?? '', abgehakt: abgehaktJeFrage.get(frage.id) ?? [] };
+  }
+
   function zeichneAuswertung() {
     const e = werteAus(sim.modul, bogen, bewertungen);
+    if (!gespeichert && sim.onAntworten) {
+      gespeichert = true;
+      sim.onAntworten(bogen.map((frage) => ({ frage, richtig: bewertungen.get(frage.id) === true, antwort: eingabeVon(frage) })));
+    }
     const dauer = zeittext(abgegebenUm - start);
 
     const ergebnis = el('section', { class: `karte ergebnis ${e.bestanden ? 'bestanden' : 'durchgefallen'}` },
@@ -432,6 +450,7 @@ export function zeigePruefung(ziel, sim) {
       type: 'button', class: e.fehler.length > 0 ? 'knopf zweitrangig' : 'knopf', onclick: sim.onZurueck,
     }, t('auswertung.zurStartseite')));
 
+    if (sim.onSichern) inhalt.push(sicherungskarte(sim.onSichern));
     ziel.replaceChildren(el('div', { class: 'inhalt' }, ...inhalt), aktionen);
     window.scrollTo(0, 0);
   }

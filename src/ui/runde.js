@@ -15,6 +15,7 @@ import {
 import { zahlfeld, zahlUngueltig, zahlAufloesung } from './zahl.js';
 import { mcLoesung, mehrfachHinweis } from './mc.js';
 import { pruefstatusZeile } from './pruefstatus.js';
+import { sicherungskarte } from './sichern.js';
 
 /**
  * @param {HTMLElement} ziel
@@ -23,14 +24,15 @@ import { pruefstatusZeile } from './pruefstatus.js';
  *   modus: 'normal' | 'vorziehen' | 'fehler',
  *   modul: object,
  *   themenTitel: Map<string, string>,
- *   onBewertung: (frage: object, richtig: boolean, uebung: boolean, modus: string, antwort?: string) => number,
- *     antwort: bei Freitext der getippte Text (F-34)
+ *   onBewertung: (frage: object, richtig: boolean, uebung: boolean, modus: string, antwort: object) => number,
+ *     antwort (F-43): Freitext {text, abgehakt}, Multiple Choice {gewaehlt}, Zahl {eingabe}
  *   onRundenende?: (runde: {modus: string, beantwortet: number, gesamt: number, fehler: number, xp: number}) =>
  *     {zaehlt: boolean, bonus: number, fortschritt: object, hinweis: object, aufstieg?: object},
  *   holeFaecher: () => number[],
  *   onFertig: () => void,
  *   holePruefstatus?: () => object | null,               // Prüfstatus der Kernpunkte (F-39) aus M7
  *   onPruefstatus?: (frage: object, geprueft: boolean) => void, // fehlt: Status nur anzeigen
+ *   onSichern?: () => Promise<object>,                    // Sicherung am Rundenende (F-41); fehlt: kein Knopf
  * }} runde
  */
 export function zeigeRunde(ziel, runde) {
@@ -62,8 +64,10 @@ export function zeigeRunde(ziel, runde) {
 
   function bewerteUndWeiter(richtig) {
     const frage = runde.fragen[nr];
-    const text = frage.typ === 'freitext' ? antwort : undefined;
-    rundenXp += runde.onBewertung(frage, richtig, uebung, runde.modus, text) ?? 0;
+    // Eingabe für die gespeicherte Antwort (F-43): Text mit abgehakten Kernpunkten, Optionen oder Zahl.
+    const eingabe = frage.typ === 'freitext' ? { text: antwort, abgehakt: [...abgehakt] }
+      : frage.typ === 'mc' ? { gewaehlt } : { eingabe: antwort };
+    rundenXp += runde.onBewertung(frage, richtig, uebung, runde.modus, eingabe) ?? 0;
     ergebnisse.push({ frage, richtig });
     nr += 1;
     if (nr < runde.fragen.length) neueFrage();
@@ -414,7 +418,9 @@ export function zeigeRunde(ziel, runde) {
       type: 'button', class: fehler.length > 0 ? 'knopf zweitrangig' : 'knopf', onclick: runde.onFertig,
     }, t('auswertung.zurStartseite')));
 
-    ziel.replaceChildren(el('div', { class: 'inhalt' }, karte, belohnung), aktionen);
+    // Sichern mit einem Tipp (F-41), damit Browser, die beim Schließen löschen, nichts verlieren.
+    const sichern = runde.onSichern && ergebnisse.length > 0 ? sicherungskarte(runde.onSichern) : null;
+    ziel.replaceChildren(el('div', { class: 'inhalt' }, karte, belohnung, sichern), aktionen);
     window.scrollTo(0, 0);
   }
 

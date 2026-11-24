@@ -48,13 +48,18 @@ export function fehlertext(fehler) {
  *          onRunde: () => void, onVorziehen: () => void, onStatistik?: () => void,
  *          onSimulation?: (() => void)|null,
  *          thema?: string|null, onThema?: (id: string|null) => void, anderswoFaellig?: number,
- *          einstellungen?: object}} zustand
+ *          einstellungen?: object,
+ *          leererStart?: {onImport: (datei: File) => void, onSpaeter: () => void}|null}} zustand
  *   thema: gewähltes Thema (F-06), null = alle; anderswoFaellig: fällige Fragen in den übrigen Themen;
  *   einstellungen: Sprache und Datensicherung, siehe einstellungskarte()
+ *   leererStart: gesetzt, wenn weder Lernstand noch XP gespeichert sind (F-42); dann steht ganz oben
+ *     das Angebot, eine Sicherung zu laden
  */
 export function zeigeStart(ziel, zustand) {
   const inhalt = [];
   const lernen = zustand.modul ? zustand.lernen : null;
+
+  if (zustand.leererStart) inhalt.push(leerstartkarte(zustand.leererStart));
 
   if (lernen) inhalt.push(lernkarte(lernen, zustand));
   if (lernen && zustand.fortschritt) inhalt.push(fortschrittskarte(zustand));
@@ -225,4 +230,28 @@ function einstellungskarte(e) {
     }, meldung.text));
   }
   return el('section', { class: 'karte' }, ...teile);
+}
+
+/**
+ * Angebot beim leeren Start (F-42): Sicherung laden oder neu beginnen. Browser, die beim Schließen
+ * die Websitedaten löschen (z. B. Brave), starten jedes Mal leer; so ist der Stand mit einem Tipp zurück.
+ * @param {{onImport: (datei: File) => void, onSpaeter: () => void}} e
+ */
+function leerstartkarte(e) {
+  const eingabe = el('input', {
+    type: 'file', accept: '.json,application/json', id: 'leerstartdatei', class: 'versteckt',
+    onchange: (ereignis) => {
+      const datei = ereignis.target.files?.[0];
+      ereignis.target.value = '';
+      if (datei) e.onImport(datei);
+    },
+  });
+  return el('section', { class: 'karte leerstart', id: 'leerstart' },
+    el('p', { class: 'etikett' }, t('sicherung.titel')),
+    el('h2', {}, t('leerstart.titel')),
+    el('p', { class: 'hinweis oben' }, t('leerstart.erklaerung')),
+    el('div', { class: 'aktionen' },
+      eingabe,
+      el('label', { for: 'leerstartdatei', class: 'knopf' }, t('leerstart.laden')),
+      el('button', { type: 'button', class: 'knopf zweitrangig', onclick: e.onSpaeter }, t('leerstart.neu'))));
 }

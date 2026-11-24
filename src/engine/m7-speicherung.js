@@ -45,7 +45,7 @@
 // überstehen sie Updates des Moduls (F-23).
 
 import { LERNSTAND_VERSION, FAECHER, neuerLernstand } from './m2-lernlogik.js';
-import { pruefeProfil, ProfilFehler, fuehreProfileZusammen } from './m4-gamification.js';
+import { pruefeProfil, ProfilFehler, fuehreProfileZusammen, gesamtXp } from './m4-gamification.js';
 
 export const DB_NAME = 'trainer-engine';
 export const DB_VERSION = 4;
@@ -55,7 +55,9 @@ const PROFIL_SCHLUESSEL = 'profil';
 const ANTWORTEN = 'antworten';
 const PRUEFSTATUS = 'pruefstatus';
 export const PRUEFSTATUS_VERSION = 1;
-const MODI = ['normal', 'vorziehen', 'fehler'];
+// Rundenarten einer gespeicherten Antwort; "simulation" seit AP11A (F-43).
+const MODI = ['normal', 'vorziehen', 'fehler', 'simulation'];
+const ANTWORT_TYPEN = ['freitext', 'mc', 'zahl'];
 
 const DATUM = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -90,7 +92,8 @@ function zaehlerAusAntworten(karten, antworten) {
     karte.falsch = 0;
   }
   for (const e of antworten) {
-    if (!istGueltigeAntwort(e)) continue;
+    // Version 1 kannte nur Freitext-Antworten aus Runden; neuere Einträge zählen hier nicht.
+    if (!istGueltigeAntwort(e) || (e.typ ?? 'freitext') !== 'freitext' || e.modus === 'simulation') continue;
     const karte = karten[e.frage];
     if (!karte) continue;
     if (e.gewusst) karte.richtig += 1;
@@ -197,15 +200,77 @@ function uebernommenePruefeintraege(alt, neu) {
   return Object.entries(neu.fragen).filter(([id, e]) => !alt.fragen[id] || e.geaendert > alt.fragen[id].geaendert).length;
 }
 
-// --- Freitext-Antworten (F-34) -------------------------------------------
+// --- Antworten (F-34, F-43, F-44) ----------------------------------------
+//
+// Jede Antwort wird als eigener Eintrag gespeichert (Objektspeicher "antworten"):
+//   { id, modul, stand, frage: "<frage-id>", typ: "freitext" | "mc" | "zahl", zeit, modus,
+//     gewusst: <Ergebnis, true = richtig bzw. gewusst>,
+//     text: "<getippt>", abgehakt: [<Nummern der abgehakten Kernpunkte>]   (Freitext)
+//     gewaehlt: [<Nummern der gewählten Optionen im Modul>]                 (Multiple Choice)
+//     eingabe: "<getippte Zahl>"                                            (Zahl)
+//     inhalt: { thema, frage, erklaerung, ... } }
+// "stand" ist der Katalogstand des Moduls (meta.stand), "modus" die Rundenart (normal, vorziehen,
+// fehler oder simulation). "inhalt" hält die Frage so fest, wie sie beim Antworten galt (F-44):
+// Fragetext und Erklärung, dazu je nach Typ Musterantwort und Kernpunkte, Optionen und richtige
+// Option(en) oder Lösung, Toleranz und Einheit. So bleibt die Sicherung ohne Moduldatei auswertbar,
+// auch für Rechenaufgaben, deren Zahlen in jeder Runde neu gezogen werden.
+// Einträge vor AP11A (F-34) haben nur id, modul, frage, zeit, text, gewusst und modus; sie gelten
+// als Freitext und bleiben gültig.
 
 function neueAntwortId(jetzt) {
   const zufall = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 12);
   return `${jetzt.toString(36)}-${zufall}`;
 }
 
+/** Die Frage, wie sie beim Antworten galt (F-44); nur Felder, die es gibt. */
+export function frageInhalt(frage) {
+  const felder = ['thema', 'frage', 'hinweis', 'erklaerung'];
+  if (frage.typ === 'freitext') felder.push('musterantwort', 'kernpunkte');
+  else if (frage.typ === 'mc') felder.push('optionen', 'richtig');
+  else if (frage.typ === 'zahl') felder.push('loesung', 'toleranz', 'einheit', 'kreis');
+  const inhalt = {};
+  for (const feld of felder) {
+    if (frage[feld] !== undefined) inhalt[feld] = structuredClone(frage[feld]);
+  }
+  return inhalt;
+}
+
+/** Nummern als sortierte Liste ohne Doppelte (aus Set, Liste, einer Zahl oder nichts). */
+function nummern(wert) {
+  if (wert == null) return [];
+  const liste = typeof wert === 'number' ? [wert] : [...wert];
+  return [...new Set(liste.filter((i) => Number.isInteger(i) && i >= 0))].sort((a, b) => a - b);
+}
+
 /**
- * Baut den Eintrag für eine Freitext-Antwort (F-34).
+ * Baut den Eintrag für eine Antwort beliebigen Typs (F-43, F-44).
+ * @param {{modul: object, frage: object, gewusst: boolean, modus: string,
+ *          antwort?: {text?: string, abgehakt?: Iterable<number>, gewaehlt?: number|Iterable<number>|null,
+ *                     eingabe?: string}}} daten
+ *   modul: das geladene Modul (für ID und Katalogstand), frage: die gezeigte Frage
+ * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
+ */
+export function antwortEintrag({ modul, frage, gewusst, modus, antwort = {} }, jetzt = Date.now()) {
+  const eintrag = {
+    id: neueAntwortId(jetzt), modul: modul.meta.id, frage: frage.id, typ: frage.typ, zeit: jetzt, modus,
+    gewusst: Boolean(gewusst),
+  };
+  if (typeof modul.meta.stand === 'string') eintrag.stand = modul.meta.stand;
+  if (frage.typ === 'freitext') {
+    eintrag.text = String(antwort.text ?? '');
+    eintrag.abgehakt = nummern(antwort.abgehakt);
+  } else if (frage.typ === 'mc') {
+    eintrag.gewaehlt = nummern(antwort.gewaehlt);
+  } else if (frage.typ === 'zahl') {
+    eintrag.eingabe = String(antwort.eingabe ?? '');
+  }
+  eintrag.inhalt = frageInhalt(frage);
+  return eintrag;
+}
+
+/**
+ * Baut den Eintrag für eine Freitext-Antwort im Format vor AP11A (F-34).
+ * Bleibt für Tests und alte Aufrufer; die App nutzt antwortEintrag.
  * @param {{modul: string, frage: string, text: string, gewusst: boolean, modus: string}} antwort
  * @param {number} [jetzt] Zeitpunkt in Millisekunden; für Tests austauschbar
  */
@@ -213,13 +278,22 @@ export function freitextEintrag({ modul, frage, text, gewusst, modus }, jetzt = 
   return { id: neueAntwortId(jetzt), modul, frage, zeit: jetzt, text: String(text ?? ''), gewusst: Boolean(gewusst), modus };
 }
 
+const istNummernliste = (w) => Array.isArray(w) && w.every((i) => Number.isInteger(i) && i >= 0);
+
 export function istGueltigeAntwort(e) {
-  return e != null && typeof e === 'object'
-    && typeof e.id === 'string' && e.id !== ''
-    && typeof e.modul === 'string' && e.modul !== ''
-    && typeof e.frage === 'string' && e.frage !== ''
-    && Number.isFinite(e.zeit) && typeof e.text === 'string' && typeof e.gewusst === 'boolean'
-    && MODI.includes(e.modus);
+  if (e == null || typeof e !== 'object'
+    || typeof e.id !== 'string' || e.id === ''
+    || typeof e.modul !== 'string' || e.modul === ''
+    || typeof e.frage !== 'string' || e.frage === ''
+    || !Number.isFinite(e.zeit) || typeof e.gewusst !== 'boolean'
+    || !MODI.includes(e.modus)) return false;
+  const typ = e.typ ?? 'freitext';
+  if (!ANTWORT_TYPEN.includes(typ)) return false;
+  if (e.stand !== undefined && typeof e.stand !== 'string') return false;
+  if (e.inhalt !== undefined && (e.inhalt === null || typeof e.inhalt !== 'object' || Array.isArray(e.inhalt))) return false;
+  if (typ === 'freitext') return typeof e.text === 'string' && (e.abgehakt === undefined || istNummernliste(e.abgehakt));
+  if (typ === 'mc') return istNummernliste(e.gewaehlt);
+  return typeof e.eingabe === 'string';
 }
 
 /**
@@ -245,14 +319,16 @@ export function fuehreAntwortenZusammen(a, b) {
 //     profil: <Profil aus M4>, lernstand: { "<modul-id>": <Lernstand> }, antworten: [ ... ],
 //     pruefstatus: { "<modul-id>": <Prüfstatus> } }
 // Version 2 (AP11) hat zusätzlich "pruefstatus" (F-39); eine Sicherung der Version 1 wird weiter
-// gelesen und bringt dann keinen Prüfstatus mit.
+// gelesen und bringt dann keinen Prüfstatus mit. Version 3 (AP11A) enthält Antworten aller
+// Fragetypen im erweiterten Format (F-43, F-44); eine ältere App würde Multiple-Choice- und
+// Zahlantworten als beschädigt überspringen und lehnt die Datei deshalb mit Hinweis ab.
 // Der Import ersetzt nie, er führt zusammen: je Frage gewinnt die jüngere Karte, XP zählen je
 // Gerät und Tag nur einmal, Freitext-Antworten kommen ohne Doppelte dazu. So kann dieselbe
 // Datei gefahrlos mehrmals eingelesen werden, und Lernstand von Gerät 2 geht nicht verloren,
 // wenn eine ältere Sicherung von Gerät 1 dazukommt. Karten zu Fragen, die ein Modul nicht mehr
 // enthält, bleiben erhalten (F-23); die Lernlogik zählt nur Fragen, die es im Modul gibt.
 
-export const SICHERUNG_VERSION = 2;
+export const SICHERUNG_VERSION = 3;
 const SICHERUNG_APP = 'trainer-engine';
 const SICHERUNG_ART = 'sicherung';
 
@@ -278,6 +354,16 @@ export function baueSicherung({ profil, lernstaende, antworten, pruefstaende = {
     antworten: [...antworten],
     pruefstatus: { ...pruefstaende },
   };
+}
+
+/**
+ * Ob eine Sicherung (Inhalt aus baueSicherung bzw. ladeSicherung) leer ist: keine Karte in
+ * einem Lernstand und keine XP (F-42). Dann bietet die App beim Start an, eine Sicherung zu laden.
+ */
+export function istLeereSicherung(sicherung) {
+  const keineKarten = Object.values(sicherung?.lernstand ?? {})
+    .every((stand) => Object.keys(stand?.karten ?? {}).length === 0);
+  return keineKarten && (sicherung?.profil == null || gesamtXp(sicherung.profil) === 0);
 }
 
 /** Wandelt Fehler aus M2/M4 beim Prüfen einer Sicherung in Sicherungs-Codes um. */

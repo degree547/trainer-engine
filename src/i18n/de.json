@@ -172,7 +172,7 @@
   "einstellungen.titel": "Einstellungen",
   "einstellungen.sprache": "Sprache",
   "sicherung.titel": "Datensicherung",
-  "sicherung.erklaerung": "Die Sicherungsdatei enthält Lernstand, XP, Streak, Freitext-Antworten und den Prüfstatus der Kernpunkte. Beim Import wird zusammengeführt, nichts überschrieben – so lässt sich der Stand auch auf ein zweites Gerät übertragen.",
+  "sicherung.erklaerung": "Die Sicherungsdatei enthält Lernstand, XP, Streak, alle Antworten (mit Frage und Musterantwort) und den Prüfstatus der Kernpunkte. Beim Import wird zusammengeführt, nichts überschrieben – so lässt sich der Stand auch auf ein zweites Gerät übertragen.",
   "sicherung.exportieren": "Sicherung exportieren",
   "sicherung.importieren": "Sicherung importieren",
   "sicherung.letzte": "Letzte Sicherung auf diesem Gerät: {datum}",
@@ -180,7 +180,7 @@
   "sicherung.nichtVerfuegbar": "Ohne Speicher im Browser ist keine Datensicherung möglich.",
   "sicherung.exportiert": "Sicherung gespeichert: {name}",
   "sicherung.exportFehler": "Die Sicherung konnte nicht erstellt werden.",
-  "sicherung.importiert": "Sicherung übernommen: {karten} neue oder neuere Karten aus {module} Modul(en), {antworten} neue Freitext-Antworten, {pruefstatus} neue oder neuere Einträge zum Prüfstatus der Kernpunkte. XP und Streak sind zusammengeführt.",
+  "sicherung.importiert": "Sicherung übernommen: {karten} neue oder neuere Karten aus {module} Modul(en), {antworten} neue Antworten, {pruefstatus} neue oder neuere Einträge zum Prüfstatus der Kernpunkte. XP und Streak sind zusammengeführt.",
   "sicherung.verworfen": "{anzahl} beschädigte Einträge in der Datei wurden übersprungen.",
   "sicherung.keinJson": "Die Datei ist keine lesbare JSON-Datei. Es wurde nichts geändert.",
   "sicherung.keineSicherung": "Die Datei ist keine Sicherung dieser App. Es wurde nichts geändert.",
@@ -274,5 +274,13 @@
   "pruefstatus.zuruecknehmen": "Zurücknehmen",
   "pruefstatus.istGeprueft": "✓ Kernpunkte geprüft",
   "pruefstatus.anleitung": "Stimmen die Kernpunkte mit der Musterantwort überein? Dann als geprüft markieren.",
-  "statistik.geprueft": "Kernpunkte geprüft: {geprueft} von {gesamt} Freitextfragen"
+  "statistik.geprueft": "Kernpunkte geprüft: {geprueft} von {gesamt} Freitextfragen",
+  "sicherung.sichern": "Fortschritt sichern",
+  "sicherung.nochmalSichern": "Noch einmal sichern",
+  "sicherung.nachRunde": "Speichert die Sicherungsdatei mit einem Tipp, auf dem Smartphone über das Teilen-Menü (z. B. Cloud-Speicher oder „In Dateien speichern“). Wichtig, wenn der Browser Websitedaten beim Schließen löscht.",
+  "sicherung.geteilt": "Sicherung übergeben: {name}",
+  "leerstart.titel": "Sicherung laden?",
+  "leerstart.erklaerung": "Auf diesem Gerät ist noch kein Lernstand gespeichert. Wenn du eine Sicherungsdatei hast, lade sie, um weiterzumachen. Löscht dein Browser die Daten beim Schließen, ist das nach jedem Neustart nötig.",
+  "leerstart.laden": "Sicherung laden",
+  "leerstart.neu": "Neu beginnen"
 }
